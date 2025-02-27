@@ -2,17 +2,17 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload } from "lucide-react"
+import { Upload, FileText, FilePlus, Database } from "lucide-react"
 import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs } from "@/app/actions"
 import RFPForm from "@/components/rfp-form"
 import { CVTable } from "@/components/cv-table"
 import { RFPTable } from "@/components/rfp-table"
+import { CollapsibleSection, StickyHeader } from "@/components/collapsible-sections"
 
 type CV = {
   id: string
@@ -51,6 +51,10 @@ export default function IntegratedMatching() {
   const [selectedRFPs, setSelectedRFPs] = useState<string[]>([])
   const [matchResults, setMatchResults] = useState<MatchResult[]>([])
   const [isMatching, setIsMatching] = useState(false)
+  
+  // Collapsible state
+  const [dataSectionOpen, setDataSectionOpen] = useState(true)
+  const dataSectionRef = useRef<HTMLDivElement>(null)
 
   // Initialize with dummy data
   useEffect(() => {
@@ -195,77 +199,103 @@ export default function IntegratedMatching() {
     }
   }
 
+  const scrollToDataSection = () => {
+    setDataSectionOpen(true)
+    dataSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
     <div className="space-y-8">
-      <div className="border rounded-lg p-6 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* CV Section */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-medium text-muted-foreground">CVs</h2>
-              <p className="text-sm text-muted-foreground">Upload and manage candidate CVs</p>
-            </div>
+      <StickyHeader 
+        cvCount={cvs.length} 
+        rfpCount={rfps.length} 
+        onExpandCV={() => scrollToDataSection()} 
+        onExpandRFP={() => scrollToDataSection()} 
+        selectedCVCount={selectedCVs.length}
+        selectedRFPCount={selectedRFPs.length}
+        onMatch={handleMatch}
+        isMatchingDisabled={isMatching || selectedCVs.length === 0 || selectedRFPs.length === 0}
+      />
 
-            <div className="space-y-6">
-              <div className="space-y-2">
+      <div ref={dataSectionRef}>
+        <CollapsibleSection 
+          title="Candidates & Requirements" 
+          icon={<Database className="h-5 w-5" />}
+          count={cvs.length + rfps.length}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* CV Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Input
-                    id="cv-upload"
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                  />
-                  <Button disabled={isUploading} variant="outline">
-                    {isUploading ? "Uploading..." : <Upload className="h-4 w-4 mr-2" />}
-                    {isUploading ? "Uploading..." : "Upload"}
-                  </Button>
+                  <FileText className="h-4 w-4" />
+                  <h3 className="text-sm font-medium">CVs ({cvs.length})</h3>
+                  {selectedCVs.length > 0 && 
+                    <span className="text-xs bg-primary/10 text-primary rounded-full px-2">
+                      {selectedCVs.length} selected
+                    </span>
+                  }
                 </div>
               </div>
-
-              <div>
-                {cvs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No CVs uploaded yet.</p>
-                ) : (
-                  <CVTable data={cvs} selectedCVs={selectedCVs} onToggleSelect={toggleCV} onDelete={handleDeleteCV} />
-                )}
+              
+              <div className="flex items-center gap-2">
+                <Input
+                  id="cv-upload"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                />
+                <Button disabled={isUploading} variant="outline">
+                  {isUploading ? "Uploading..." : <Upload className="h-4 w-4 mr-2" />}
+                  {isUploading ? "Uploading..." : "Upload"}
+                </Button>
               </div>
+              
+              {cvs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No CVs uploaded yet.</p>
+              ) : (
+                <CVTable data={cvs} selectedCVs={selectedCVs} onToggleSelect={toggleCV} onDelete={handleDeleteCV} />
+              )}
             </div>
-          </div>
-
-          {/* RFP Section */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-medium text-muted-foreground">RFPs</h2>
-              <p className="text-sm text-muted-foreground">Add and manage Request for Proposals</p>
-            </div>
-
-            <div className="space-y-6">
+            
+            {/* RFP Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FilePlus className="h-4 w-4" />
+                  <h3 className="text-sm font-medium">RFPs ({rfps.length})</h3>
+                  {selectedRFPs.length > 0 && 
+                    <span className="text-xs bg-primary/10 text-primary rounded-full px-2">
+                      {selectedRFPs.length} selected
+                    </span>
+                  }
+                </div>
+              </div>
+              
               <div className="flex justify-between items-center">
                 <RFPForm onRFPAdded={(newRFP) => setRfps([...rfps, newRFP])} />
               </div>
-
-              <div>
-                {rfps.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No RFPs added yet.</p>
-                ) : (
-                  <RFPTable
-                    data={rfps}
-                    selectedRFPs={selectedRFPs}
-                    onToggleSelect={toggleRFP}
-                    onDelete={handleDeleteRFP}
-                  />
-                )}
-              </div>
+              
+              {rfps.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No RFPs added yet.</p>
+              ) : (
+                <RFPTable
+                  data={rfps}
+                  selectedRFPs={selectedRFPs}
+                  onToggleSelect={toggleRFP}
+                  onDelete={handleDeleteRFP}
+                />
+              )}
             </div>
           </div>
-        </div>
+        </CollapsibleSection>
       </div>
 
       {/* Matching Section */}
-      <div className="border rounded-lg p-6 bg-muted/50">
+      <div className="border rounded-lg p-6 bg-gradient-to-br from-muted/50 to-background shadow-md">
         <div className="mb-4">
-          <h2 className="text-lg font-medium text-muted-foreground">Match Results</h2>
+          <h2 className="text-xl font-medium">Match Results</h2>
           <p className="text-sm text-muted-foreground">View matching results between selected CVs and RFPs</p>
         </div>
 
@@ -285,10 +315,10 @@ export default function IntegratedMatching() {
             </Button>
           </div>
 
-          {matchResults.length > 0 && (
-            <div>
+          {matchResults.length > 0 ? (
+            <div className="rounded-lg border overflow-hidden">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/50">
                   <TableRow>
                     <TableHead>CV</TableHead>
                     <TableHead>RFP</TableHead>
@@ -299,7 +329,7 @@ export default function IntegratedMatching() {
                 <TableBody>
                   {matchResults.map((result, index) => (
                     <TableRow key={index}>
-                      <TableCell>{result.cvName}</TableCell>
+                      <TableCell className="font-medium">{result.cvName}</TableCell>
                       <TableCell>{result.rfpTitle}</TableCell>
                       <TableCell>
                         <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
@@ -319,6 +349,11 @@ export default function IntegratedMatching() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          ) : (
+            <div className="text-center p-8 border rounded-lg bg-muted/20">
+              <p className="text-muted-foreground mb-2">No matches yet</p>
+              <p className="text-sm">Select CVs and RFPs above and click "Match Selected" to see results</p>
             </div>
           )}
         </div>
