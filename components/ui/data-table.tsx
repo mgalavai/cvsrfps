@@ -93,7 +93,7 @@ export function DataTable<TData, TValue>({
               <TableRow key={headerGroup.id} className={classNameRow}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className={classNameCell}>
+                    <TableHead key={header.id} className={cn("font-bold text-emphasis", classNameCell)}>
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   )
@@ -121,7 +121,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className={cn("h-24 text-center", classNameCell)}>
+                <TableCell colSpan={columns.length} className={cn("h-24 text-center font-medium", classNameCell)}>
                   No results.
                 </TableCell>
               </TableRow>
@@ -131,7 +131,7 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="flex items-center justify-between space-x-2">
         <div className="flex items-center space-x-2">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-medium text-emphasis">
             Rows per page:
           </p>
           <Select
@@ -153,7 +153,7 @@ export function DataTable<TData, TValue>({
           </Select>
         </div>
         
-        <div className="flex items-center justify-center text-sm text-muted-foreground">
+        <div className="flex items-center justify-center text-sm font-medium text-muted-foreground">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
           {table.getPageCount()}
         </div>

@@ -58,13 +58,14 @@ export function RFPTable({ data, selectedRFPs, onToggleSelect, onDelete }: RFPTa
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
+            className="p-0 hover:bg-transparent font-bold text-emphasis"
           >
             Title
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         )
       },
+      cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
     },
     {
       accessorKey: "requirements",

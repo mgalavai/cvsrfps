@@ -229,27 +229,36 @@ export default function IntegratedMatching() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  <h3 className="text-sm font-medium">CVs ({cvs.length})</h3>
+                  <h3 className="text-sm font-bold text-emphasis">CVs ({cvs.length})</h3>
                   {selectedCVs.length > 0 && 
                     <span className="text-xs bg-primary/10 text-primary rounded-full px-2">
                       {selectedCVs.length} selected
                     </span>
                   }
                 </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Input
-                  id="cv-upload"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={handleFileChange}
-                  disabled={isUploading}
-                />
-                <Button disabled={isUploading} variant="outline">
-                  {isUploading ? "Uploading..." : <Upload className="h-4 w-4 mr-2" />}
-                  {isUploading ? "Uploading..." : "Upload"}
-                </Button>
+                
+                <label htmlFor="cv-upload" className="cursor-pointer">
+                  <Button 
+                    disabled={isUploading} 
+                    variant="outline" 
+                    className="flex items-center gap-1"
+                    type="button"
+                    asChild
+                  >
+                    <div>
+                      {isUploading ? "Uploading..." : <Upload className="h-4 w-4 mr-1" />}
+                      {isUploading ? "Uploading..." : "Upload"}
+                    </div>
+                  </Button>
+                  <input
+                    id="cv-upload"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                    className="hidden"
+                  />
+                </label>
               </div>
               
               {cvs.length === 0 ? (
@@ -264,16 +273,14 @@ export default function IntegratedMatching() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FilePlus className="h-4 w-4" />
-                  <h3 className="text-sm font-medium">RFPs ({rfps.length})</h3>
+                  <h3 className="text-sm font-bold text-emphasis">RFPs ({rfps.length})</h3>
                   {selectedRFPs.length > 0 && 
                     <span className="text-xs bg-primary/10 text-primary rounded-full px-2">
                       {selectedRFPs.length} selected
                     </span>
                   }
                 </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
+                
                 <RFPForm onRFPAdded={(newRFP) => setRfps([...rfps, newRFP])} />
               </div>
               
@@ -293,32 +300,32 @@ export default function IntegratedMatching() {
       </div>
 
       {/* Matching Section */}
-      <div className="border rounded-lg p-6 bg-gradient-to-br from-muted/50 to-background shadow-md">
+      <div className="py-6">
         <div className="mb-4">
-          <h2 className="text-xl font-medium">Match Results</h2>
-          <p className="text-sm text-muted-foreground">View matching results between selected CVs and RFPs</p>
+          <h2 className="text-xl font-bold text-heading mb-1">Match Results</h2>
+          <p className="text-sm text-subtitle">View matching results between selected CVs and RFPs</p>
         </div>
 
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">
+              <p className="text-sm font-semibold text-emphasis">
                 Selected: {selectedCVs.length} CVs and {selectedRFPs.length} RFPs
               </p>
             </div>
             <Button
               onClick={handleMatch}
               disabled={isMatching || selectedCVs.length === 0 || selectedRFPs.length === 0}
-              className="px-8"
+              className="px-8 font-medium"
             >
               {isMatching ? "Matching..." : "Match Selected"}
             </Button>
           </div>
 
           {matchResults.length > 0 ? (
-            <div className="rounded-lg border overflow-hidden">
+            <div className="overflow-hidden">
               <Table>
-                <TableHeader className="bg-muted/50">
+                <TableHeader className="bg-muted/30">
                   <TableRow>
                     <TableHead>CV</TableHead>
                     <TableHead>RFP</TableHead>
@@ -351,7 +358,7 @@ export default function IntegratedMatching() {
               </Table>
             </div>
           ) : (
-            <div className="text-center p-8 border rounded-lg bg-muted/20">
+            <div className="text-center p-8 bg-muted/10">
               <p className="text-muted-foreground mb-2">No matches yet</p>
               <p className="text-sm">Select CVs and RFPs above and click "Match Selected" to see results</p>
             </div>

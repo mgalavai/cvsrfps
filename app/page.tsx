@@ -2,8 +2,7 @@ import IntegratedMatching from "@/components/integrated-matching"
 
 export default function Home() {
   return (
-    <div className="container mx-auto py-10 space-y-8">
-      <h1 className="text-3xl font-bold">CV to RFP Matching Service</h1>
+    <div className="container mx-auto px-6 sm:px-8 md:px-10 lg:px-16 py-12 mb-12">
       <IntegratedMatching />
     </div>
   )

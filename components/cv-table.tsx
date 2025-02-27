@@ -81,7 +81,7 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
+            className="p-0 hover:bg-transparent font-bold text-emphasis"
           >
             Candidate
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -95,7 +95,7 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
         
         return (
           <div className="flex items-center">
-            <span>{fullName}</span>
+            <span className="font-medium">{fullName}</span>
           </div>
         )
       },

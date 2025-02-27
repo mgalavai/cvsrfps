@@ -16,7 +16,7 @@ body {
 @layer base {
   :root {
     --background: 38 33% 97%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 0 0% 0%; /* Changed to pure black for stronger contrast */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
@@ -92,10 +92,48 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Enhanced typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  h1 {
+    @apply text-3xl;
+  }
+  
+  h2 {
+    @apply text-2xl;
+  }
+  
+  h3 {
+    @apply text-xl;
+  }
+  
+  .text-label {
+    @apply font-medium text-sm;
+  }
 }
 
 /* Add a custom class for cards to make them stand out */
 .card-shadow {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.12);
   border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Typography helpers */
+.text-emphasis {
+  font-weight: 600;
+  color: black;
+}
+
+.text-heading {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: black;
+}
+
+.text-subtitle {
+  font-weight: 500;
+  color: #333;
 }

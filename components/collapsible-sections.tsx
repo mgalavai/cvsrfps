@@ -16,14 +16,14 @@ export function CollapsibleSection({ title, icon, children, count }: SectionProp
   const [isOpen, setIsOpen] = useState(true)
   
   return (
-    <div className="border rounded-lg shadow-sm">
+    <div>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger 
-          className="w-full p-4 flex justify-between items-center hover:bg-muted/50 cursor-pointer"
+          className="w-full py-4 flex justify-between items-center hover:bg-muted/20 cursor-pointer"
         >
           <div className="flex items-center gap-2">
             {icon}
-            <h2 className="text-lg font-medium">{title}</h2>
+            <h2 className="text-lg font-bold text-heading">{title}</h2>
             {count !== undefined && (
               <span className="text-sm text-muted-foreground">({count})</span>
             )}
@@ -31,7 +31,7 @@ export function CollapsibleSection({ title, icon, children, count }: SectionProp
           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </CollapsibleTrigger>
         
-        <CollapsibleContent className="p-4">
+        <CollapsibleContent className="py-4">
           {children}
         </CollapsibleContent>
       </Collapsible>
