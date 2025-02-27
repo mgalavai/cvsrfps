@@ -172,6 +172,7 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
     placeholder="Filter candidates..." 
     classNameRow="h-12"
     classNameCell="py-2"
+    pageSize={5}
   />
 }
 

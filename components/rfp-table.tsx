@@ -3,9 +3,15 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, Trash2 } from "lucide-react"
+import { ArrowUpDown, Trash2, MoreHorizontal, FileEdit } from "lucide-react"
 import { DataTable } from "@/components/ui/data-table"
 import { cn } from "@/lib/utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface RFP {
   id: string
@@ -69,14 +75,26 @@ export function RFPTable({ data, selectedRFPs, onToggleSelect, onDelete }: RFPTa
       id: "actions",
       cell: ({ row }) => (
         <div className="flex justify-end">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="h-8 w-8 p-0 text-destructive"
-            onClick={() => onDelete(row.original.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(row.original.id)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <FileEdit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
     },
@@ -89,6 +107,7 @@ export function RFPTable({ data, selectedRFPs, onToggleSelect, onDelete }: RFPTa
     placeholder="Filter RFPs..." 
     classNameRow="h-12"
     classNameCell="py-2"
+    pageSize={5}
   />
 }
 
