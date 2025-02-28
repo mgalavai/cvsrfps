@@ -76,7 +76,7 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {filterColumn && (
         <div className="flex items-center gap-2">
           <Input
@@ -134,7 +134,7 @@ export function DataTable<TData, TValue>({
       </div>
       
       {/* Pagination as separate element below table - removing border */}
-      <div className="flex items-center justify-between py-2 text-sm bg-transparent">
+      <div className="flex items-center justify-between pt-1 pb-2 text-sm bg-transparent">
         <div className="flex items-center space-x-2">
           <p className="text-sm text-muted-foreground">
             Rows per page:

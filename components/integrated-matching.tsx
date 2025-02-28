@@ -121,9 +121,9 @@ function CollapsibleMatchRun({
   };
   
   return (
-    <div className="space-y-2">
+    <div className={`${isOpen ? "" : "space-y-2"}`}>
       <div 
-        className="flex items-center justify-between px-4 py-3 bg-muted/20 cursor-pointer border rounded-lg"
+        className="flex items-center justify-between px-4 py-3 bg-white cursor-pointer border rounded-t-lg"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div>
@@ -161,7 +161,7 @@ function CollapsibleMatchRun({
       </div>
       
       {isOpen && (
-        <div className="border rounded-md overflow-hidden">
+        <div className="border-x border-b rounded-b-md overflow-hidden">
           <Table className="w-full bg-white">
             <TableHeader className="bg-muted/30">
               <TableRow className="h-8">
@@ -1044,9 +1044,9 @@ ${cvData.firstName} ${cvData.lastName}
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Group by:</span>
                 <Tabs value={groupByFilter} onValueChange={(value) => setGroupByFilter(value as "cv" | "rfp")}>
-                  <TabsList>
-                    <TabsTrigger value="cv">CV</TabsTrigger>
-                    <TabsTrigger value="rfp">RFP</TabsTrigger>
+                  <TabsList className="bg-muted/30">
+                    <TabsTrigger className="data-[state=active]:bg-white" value="cv">CV</TabsTrigger>
+                    <TabsTrigger className="data-[state=active]:bg-white" value="rfp">RFP</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
