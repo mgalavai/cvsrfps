@@ -121,9 +121,9 @@ function CollapsibleMatchRun({
   };
   
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="space-y-2">
       <div 
-        className="flex items-center justify-between px-4 py-3 bg-muted/20 cursor-pointer"
+        className="flex items-center justify-between px-4 py-3 bg-muted/20 cursor-pointer border rounded-lg"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div>
@@ -161,8 +161,8 @@ function CollapsibleMatchRun({
       </div>
       
       {isOpen && (
-        <div className="overflow-hidden">
-          <Table>
+        <div className="border rounded-md overflow-hidden">
+          <Table className="w-full bg-white">
             <TableHeader className="bg-muted/30">
               <TableRow className="h-8">
                 {groupByFilter === "cv" ? (
@@ -953,14 +953,16 @@ ${cvData.firstName} ${cvData.lastName}
               {cvs.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No CVs uploaded yet.</p>
               ) : (
-                <CVTable 
-                  data={cvs} 
-                  selectedCVs={selectedCVs} 
-                  onToggleSelect={toggleCV} 
-                  onDelete={handleDeleteCV}
-                  onSaveContent={handleSaveCV}
-                  onReanalyze={handleReanalyzeCVContent}
-                />
+                <div>
+                  <CVTable 
+                    data={cvs} 
+                    selectedCVs={selectedCVs} 
+                    onToggleSelect={toggleCV} 
+                    onDelete={handleDeleteCV}
+                    onSaveContent={handleSaveCV}
+                    onReanalyze={handleReanalyzeCVContent}
+                  />
+                </div>
               )}
             </div>
             
@@ -989,13 +991,15 @@ ${cvData.firstName} ${cvData.lastName}
               {rfps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No RFPs added yet.</p>
               ) : (
-                <RFPTable
-                  data={rfps}
-                  selectedRFPs={selectedRFPs}
-                  onToggleSelect={toggleRFP}
-                  onDelete={handleDeleteRFP}
-                  onSave={handleSaveRFP}
-                />
+                <div>
+                  <RFPTable
+                    data={rfps}
+                    selectedRFPs={selectedRFPs}
+                    onToggleSelect={toggleRFP}
+                    onDelete={handleDeleteRFP}
+                    onSave={handleSaveRFP}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -1136,7 +1140,7 @@ ${cvData.firstName} ${cvData.lastName}
               ))}
             </div>
           ) : (
-            <div className="text-center p-8 bg-muted/10">
+            <div className="text-center py-8">
               <p className="text-muted-foreground mb-2">No matches found for the selected timeframe</p>
               <p className="text-sm">Try selecting a different timeframe or run a new match</p>
             </div>

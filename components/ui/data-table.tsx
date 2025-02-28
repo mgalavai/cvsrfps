@@ -87,8 +87,10 @@ export function DataTable<TData, TValue>({
           />
         </div>
       )}
-      <div className="border rounded-md">
-        <Table className="w-full table-fixed checkbox-compact">
+      
+      {/* Table with border and rounded corners */}
+      <div className="border rounded-md overflow-hidden">
+        <Table className="w-full table-fixed checkbox-compact bg-white">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className={classNameRow}>
@@ -130,9 +132,11 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between space-x-2">
+      
+      {/* Pagination as separate element below table - removing border */}
+      <div className="flex items-center justify-between py-2 text-sm bg-transparent">
         <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium text-emphasis">
+          <p className="text-sm text-muted-foreground">
             Rows per page:
           </p>
           <Select
