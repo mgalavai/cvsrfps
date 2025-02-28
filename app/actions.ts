@@ -27,6 +27,13 @@ type MatchResult = {
   matchedKeywords: string[]
 }
 
+type MatchSettings = {
+  threshold?: number,
+  keywordWeight?: number,
+  contentWeight?: number,
+  maxResults?: number
+}
+
 // In a real app, you would use a database
 // For this demo, we'll use in-memory storage
 let cvs: CV[] = []
@@ -94,7 +101,18 @@ export async function deleteRFP(id: string): Promise<void> {
   return Promise.resolve()
 }
 
-export async function matchCVsToRFPs(selectedCVs: CV[], selectedRFPs: RFP[]): Promise<MatchResult[]> {
+export async function matchCVsToRFPs(
+  selectedCVs: CV[], 
+  selectedRFPs: RFP[],
+  settings?: MatchSettings
+): Promise<MatchResult[]> {
+  // Use settings or defaults
+  const {
+    keywordWeight = 0.7,
+    contentWeight = 0.3,
+    maxResults = 20
+  } = settings || {};
+
   // In a real app, you would use a more sophisticated matching algorithm
   // For this demo, we'll use a simple keyword matching approach
 
@@ -111,8 +129,23 @@ export async function matchCVsToRFPs(selectedCVs: CV[], selectedRFPs: RFP[]): Pr
       // Check which keywords are present in the CV
       const matchedKeywords = requirementKeywords.filter((keyword) => cv.content.toLowerCase().includes(keyword))
 
-      // Calculate match score (percentage of matched keywords)
-      const score = Math.round((matchedKeywords.length / requirementKeywords.length) * 100)
+      // Calculate keyword match score (percentage of matched keywords)
+      const keywordScore = Math.round((matchedKeywords.length / requirementKeywords.length) * 100);
+      
+      // Calculate content similarity score (simplified for demo)
+      // In a real app, this would use NLP/semantic analysis
+      const contentSimilarityScore = Math.round(
+        (cv.content.length > 0 ? 
+          rfp.requirements.split(/\W+/).filter(word => 
+            cv.content.toLowerCase().includes(word.toLowerCase())
+          ).length / rfp.requirements.split(/\W+/).length : 0) * 100
+      );
+      
+      // Calculate weighted score
+      const score = Math.round(
+        (keywordScore * keywordWeight) + 
+        (contentSimilarityScore * contentWeight)
+      );
 
       results.push({
         cvId: cv.id,
@@ -126,6 +159,6 @@ export async function matchCVsToRFPs(selectedCVs: CV[], selectedRFPs: RFP[]): Pr
   }
 
   // Sort results by score (highest first)
-  return results.sort((a, b) => b.score - a.score)
+  return results.sort((a, b) => b.score - a.score).slice(0, maxResults);
 }
 

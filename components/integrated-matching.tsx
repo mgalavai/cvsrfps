@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2 } from "lucide-react"
+import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2, Settings } from "lucide-react"
 import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs, saveCV, reanalyzeCVContent, saveRFP } from "@/app/actions"
 import RFPForm from "@/components/rfp-form"
 import { CVTable } from "@/components/cv-table"
@@ -36,6 +36,11 @@ import {
   TabsList,
   TabsTrigger
 } from "@/components/ui/tabs"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover"
 
 type CV = {
   id: string
@@ -89,6 +94,17 @@ export default function IntegratedMatching() {
   // Collapsible state
   const [dataSectionOpen, setDataSectionOpen] = useState(true)
   const dataSectionRef = useRef<HTMLDivElement>(null)
+
+  // Add default settings constant
+  const DEFAULT_MATCH_SETTINGS = {
+    threshold: 30,
+    keywordWeight: 70,
+    contentWeight: 30,
+    maxResults: 20,
+  };
+
+  // Add matching settings state
+  const [matchSettings, setMatchSettings] = useState(DEFAULT_MATCH_SETTINGS);
 
   // Initialize with dummy data
   useEffect(() => {
@@ -383,6 +399,11 @@ export default function IntegratedMatching() {
     }
   };
 
+  // Handle reset settings
+  const handleResetSettings = () => {
+    setMatchSettings(DEFAULT_MATCH_SETTINGS);
+  };
+
   const handleMatch = async () => {
     if (selectedCVs.length === 0 || selectedRFPs.length === 0) return
 
@@ -392,20 +413,34 @@ export default function IntegratedMatching() {
       const selectedCVData = cvs.filter((cv) => selectedCVs.includes(cv.id))
       const selectedRFPData = rfps.filter((rfp) => selectedRFPs.includes(rfp.id))
 
-      // Call the server action to match CVs to RFPs
-      const results = await matchCVsToRFPs(selectedCVData, selectedRFPData)
+      // Call the server action to match CVs to RFPs with current settings
+      const results = await matchCVsToRFPs(
+        selectedCVData, 
+        selectedRFPData,
+        {
+          threshold: matchSettings.threshold,
+          keywordWeight: matchSettings.keywordWeight / 100,
+          contentWeight: matchSettings.contentWeight / 100,
+          maxResults: matchSettings.maxResults
+        }
+      )
+      
+      // Filter results based on threshold
+      const filteredResults = results.filter(
+        result => result.score >= matchSettings.threshold
+      ).slice(0, matchSettings.maxResults);
       
       // Store the results in history
       const newMatchRun: MatchRun = {
         id: `mr-${Date.now()}`,
         timestamp: new Date(),
-        results: results,
+        results: filteredResults,
         selectedCVs: [...selectedCVs],
         selectedRFPs: [...selectedRFPs]
       };
       
       setMatchHistory(prev => [newMatchRun, ...prev]);
-      setMatchResults(results);
+      setMatchResults(filteredResults);
       setIsMatching(false);
     } catch (error) {
       console.error("Error matching CVs to RFPs:", error)
@@ -417,6 +452,14 @@ export default function IntegratedMatching() {
     setDataSectionOpen(true)
     dataSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Handle settings change
+  const handleSettingChange = (key: string, value: number) => {
+    setMatchSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
   return (
     <div className="space-y-8">
@@ -558,15 +601,76 @@ export default function IntegratedMatching() {
               </div>
             </div>
             
-            <Button
-              onClick={handleMatch}
-              disabled={isMatching || selectedCVs.length === 0 || selectedRFPs.length === 0}
-              className="px-8 font-medium"
-            >
-              {isMatching 
-                ? "Matching..." 
-                : `Match Selected (${selectedCVs.length} CVs + ${selectedRFPs.length} RFPs)`}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" title="Matching Settings" className="relative">
+                    <Settings className="h-4 w-4" />
+                    {(matchSettings.threshold !== DEFAULT_MATCH_SETTINGS.threshold ||
+                      matchSettings.keywordWeight !== DEFAULT_MATCH_SETTINGS.keywordWeight ||
+                      matchSettings.contentWeight !== DEFAULT_MATCH_SETTINGS.contentWeight ||
+                      matchSettings.maxResults !== DEFAULT_MATCH_SETTINGS.maxResults) && (
+                      <div className="absolute h-3 w-3 bg-red-500 rounded-full -top-1 -right-1 border border-background" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Matching Settings</h4>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="threshold" className="text-sm">
+                          Match Threshold: {matchSettings.threshold}%
+                        </label>
+                      </div>
+                      <Input
+                        id="threshold"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={matchSettings.threshold}
+                        onChange={(e) => handleSettingChange('threshold', parseInt(e.target.value))}
+                        className="cursor-pointer"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="keywordWeight" className="text-sm">
+                          Keyword Weight: {matchSettings.keywordWeight}%
+                        </label>
+                      </div>
+                      <Input
+                        id="keywordWeight"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={matchSettings.keywordWeight}
+                        onChange={(e) => handleSettingChange('keywordWeight', parseInt(e.target.value))}
+                        className="cursor-pointer"
+                      />
+                    </div>
+                    
+                    <div className="pt-2">
+                      <Button size="sm" className="w-full" onClick={handleResetSettings}>
+                        Reset to Defaults
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <Button
+                onClick={handleMatch}
+                disabled={isMatching || selectedCVs.length === 0 || selectedRFPs.length === 0}
+                className="px-8 font-medium"
+              >
+                {isMatching 
+                  ? "Matching..." 
+                  : `Match Selected (${selectedCVs.length} CVs + ${selectedRFPs.length} RFPs)`}
+              </Button>
+            </div>
           </div>
 
           {getFilteredHistory().length > 0 ? (
@@ -612,20 +716,20 @@ export default function IntegratedMatching() {
                     <div className="overflow-hidden">
                       <Table>
                         <TableHeader className="bg-muted/30">
-                          <TableRow>
+                          <TableRow className="h-8">
                             {groupByFilter === "cv" ? (
                               <>
-                                <TableHead>CV</TableHead>
-                                <TableHead>RFP</TableHead>
-                                <TableHead>Match Score</TableHead>
-                                <TableHead>Matched Keywords</TableHead>
+                                <TableHead className="py-1">CV</TableHead>
+                                <TableHead className="py-1">RFP</TableHead>
+                                <TableHead className="py-1">Match Score</TableHead>
+                                <TableHead className="py-1">Matched Keywords</TableHead>
                               </>
                             ) : (
                               <>
-                                <TableHead>RFP</TableHead>
-                                <TableHead>CV</TableHead>
-                                <TableHead>Match Score</TableHead>
-                                <TableHead>Matched Keywords</TableHead>
+                                <TableHead className="py-1">RFP</TableHead>
+                                <TableHead className="py-1">CV</TableHead>
+                                <TableHead className="py-1">Match Score</TableHead>
+                                <TableHead className="py-1">Matched Keywords</TableHead>
                               </>
                             )}
                           </TableRow>
@@ -645,9 +749,9 @@ export default function IntegratedMatching() {
                             ).map(([cvId, results]) => (
                               <React.Fragment key={cvId}>
                                 {/* Header row for the CV */}
-                                <TableRow className="bg-muted/5">
-                                  <TableCell className="font-bold">{results[0].cvName}</TableCell>
-                                  <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                                <TableRow className="bg-muted/5 h-8">
+                                  <TableCell className="font-bold py-1">{results[0].cvName}</TableCell>
+                                  <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
                                     {results.length} matching RFPs
                                   </TableCell>
                                 </TableRow>
@@ -690,9 +794,9 @@ export default function IntegratedMatching() {
                             ).map(([rfpId, results]) => (
                               <React.Fragment key={rfpId}>
                                 {/* Header row for the RFP */}
-                                <TableRow className="bg-muted/5">
-                                  <TableCell className="font-bold">{results[0].rfpTitle}</TableCell>
-                                  <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                                <TableRow className="bg-muted/5 h-8">
+                                  <TableCell className="font-bold py-1">{results[0].rfpTitle}</TableCell>
+                                  <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
                                     {results.length} matching CVs
                                   </TableCell>
                                 </TableRow>

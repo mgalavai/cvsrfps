@@ -184,8 +184,8 @@ export function CVTable({
         data={data}
         filterColumn="name"
         placeholder="Filter CVs..."
-        classNameRow="h-12"
-        classNameCell="py-2"
+        classNameRow="h-10"
+        classNameCell="py-1"
         pageSize={5}
       />
       

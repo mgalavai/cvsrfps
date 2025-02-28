@@ -135,10 +135,10 @@ export function RFPTable({
       <DataTable 
         columns={columns} 
         data={data} 
-        filterColumn="title" 
-        placeholder="Filter RFPs..." 
-        classNameRow="h-12"
-        classNameCell="py-2"
+        filterColumn="position" 
+        placeholder="Filter positions..." 
+        classNameRow="h-10"
+        classNameCell="py-1"
         pageSize={5}
       />
       
