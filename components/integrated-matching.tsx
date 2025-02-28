@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2, Settings } from "lucide-react"
+import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2, Settings, Copy, Sparkles, Loader2 } from "lucide-react"
 import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs, saveCV, reanalyzeCVContent, saveRFP } from "@/app/actions"
 import RFPForm from "@/components/rfp-form"
 import { CVTable } from "@/components/cv-table"
@@ -41,6 +41,18 @@ import {
   PopoverContent,
   PopoverTrigger
 } from "@/components/ui/popover"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+  SheetClose
+} from "@/components/ui/sheet"
+import { toast } from "@/components/ui/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 
 type CV = {
   id: string
@@ -64,6 +76,7 @@ type MatchResult = {
   rfpTitle: string
   score: number
   matchedKeywords: string[]
+  pitch?: string
 }
 
 type MatchRun = {
@@ -105,6 +118,10 @@ export default function IntegratedMatching() {
 
   // Add matching settings state
   const [matchSettings, setMatchSettings] = useState(DEFAULT_MATCH_SETTINGS);
+
+  // Add state for managing pitch generation
+  const [generatingPitch, setGeneratingPitch] = useState<{[key: string]: boolean}>({});
+  const [pitches, setPitches] = useState<{[key: string]: string}>({});
 
   // Initialize with dummy data
   useEffect(() => {
@@ -461,6 +478,93 @@ export default function IntegratedMatching() {
     }));
   };
 
+  // Generate pitch for a specific match
+  const generatePitch = async (cv: string, rfp: string, matchResult: MatchResult) => {
+    const pitchKey = `${matchResult.cvId}-${matchResult.rfpId}`;
+    
+    // Don't regenerate if already generating
+    if (generatingPitch[pitchKey]) return;
+    
+    // Set generating state
+    setGeneratingPitch(prev => ({
+      ...prev,
+      [pitchKey]: true
+    }));
+    
+    try {
+      // In a real app, this would be an API call to an AI service
+      // For demo purposes, we're simulating a delay and using template text
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Get the CV and RFP details
+      const cvData = cvs.find(c => c.id === matchResult.cvId);
+      const rfpData = rfps.find(r => r.id === matchResult.rfpId);
+      
+      if (!cvData || !rfpData) throw new Error("CV or RFP not found");
+      
+      // Generate a mock pitch based on the match
+      const generatedPitch = `
+# Pitch for ${cvData.firstName} ${cvData.lastName} - ${rfpData.title}
+
+## Introduction
+I'm writing to express my interest in the ${rfpData.title} position. With my background in ${matchResult.matchedKeywords.join(", ")}, I believe I'm an excellent match for this role.
+
+## Match Analysis
+Our system has identified a ${matchResult.score}% match between my qualifications and your requirements.
+
+## Key Qualifications
+${cvData.content}
+
+## Why I'm Interested
+${rfpData.description} aligns perfectly with my career goals and experience.
+
+## Next Steps
+I would welcome the opportunity to discuss how my experience and skills can benefit your team. Please feel free to contact me at any time to schedule an interview.
+
+Best regards,
+${cvData.firstName} ${cvData.lastName}
+      `;
+      
+      // Store the generated pitch
+      setPitches(prev => ({
+        ...prev,
+        [pitchKey]: generatedPitch
+      }));
+      
+      // Show success toast
+      toast({
+        title: "Pitch generated",
+        description: "Your pitch has been successfully generated.",
+        action: <ToastAction altText="View">View</ToastAction>,
+      });
+    } catch (error) {
+      console.error("Error generating pitch:", error);
+      toast({
+        title: "Generation failed",
+        description: "Failed to generate pitch. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Reset generating state
+      setGeneratingPitch(prev => ({
+        ...prev,
+        [pitchKey]: false
+      }));
+    }
+  };
+  
+  // Copy pitch to clipboard
+  const copyPitch = (pitchKey: string) => {
+    const pitch = pitches[pitchKey];
+    if (pitch) {
+      navigator.clipboard.writeText(pitch);
+      toast({
+        title: "Copied to clipboard",
+        description: "Pitch has been copied to clipboard.",
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
       <StickyHeader 
@@ -723,6 +827,7 @@ export default function IntegratedMatching() {
                                 <TableHead className="py-1">RFP</TableHead>
                                 <TableHead className="py-1">Match Score</TableHead>
                                 <TableHead className="py-1">Matched Keywords</TableHead>
+                                <TableHead className="py-1">Actions</TableHead>
                               </>
                             ) : (
                               <>
@@ -730,6 +835,7 @@ export default function IntegratedMatching() {
                                 <TableHead className="py-1">CV</TableHead>
                                 <TableHead className="py-1">Match Score</TableHead>
                                 <TableHead className="py-1">Matched Keywords</TableHead>
+                                <TableHead className="py-1">Actions</TableHead>
                               </>
                             )}
                           </TableRow>
@@ -776,6 +882,69 @@ export default function IntegratedMatching() {
                                           ))}
                                         </div>
                                       </TableCell>
+                                      <TableCell className="py-2">
+                                        {/* Pitch Generation Button */}
+                                        {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
+                                          <Button variant="outline" size="sm" disabled>
+                                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                            Generating...
+                                          </Button>
+                                        ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
+                                          <Sheet>
+                                            <SheetTrigger asChild>
+                                              <Button variant="outline" size="sm">
+                                                <Sparkles className="h-3 w-3 mr-1" />
+                                                View Pitch
+                                              </Button>
+                                            </SheetTrigger>
+                                            <SheetContent className="sm:max-w-md">
+                                              <SheetHeader>
+                                                <SheetTitle>Generated Pitch</SheetTitle>
+                                                <SheetDescription>
+                                                  For {result.cvName} matching {result.rfpTitle}
+                                                </SheetDescription>
+                                              </SheetHeader>
+                                              <div className="mt-4 relative">
+                                                <div className="prose prose-sm max-h-[60vh] overflow-y-auto p-4 border rounded-md bg-muted/20 whitespace-pre-line">
+                                                  {pitches[`${result.cvId}-${result.rfpId}`]}
+                                                </div>
+                                                <Button 
+                                                  size="sm" 
+                                                  variant="secondary" 
+                                                  className="absolute top-2 right-2"
+                                                  onClick={() => copyPitch(`${result.cvId}-${result.rfpId}`)}
+                                                >
+                                                  <Copy className="h-3 w-3 mr-1" />
+                                                  Copy
+                                                </Button>
+                                              </div>
+                                              <SheetFooter className="mt-4">
+                                                <SheetClose asChild>
+                                                  <Button type="button" variant="outline">
+                                                    Close
+                                                  </Button>
+                                                </SheetClose>
+                                                <Button 
+                                                  type="button" 
+                                                  onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                                                >
+                                                  <Sparkles className="h-3 w-3 mr-1" />
+                                                  Regenerate
+                                                </Button>
+                                              </SheetFooter>
+                                            </SheetContent>
+                                          </Sheet>
+                                        ) : (
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                                          >
+                                            <Sparkles className="h-3 w-3 mr-1" />
+                                            Generate Pitch
+                                          </Button>
+                                        )}
+                                      </TableCell>
                                     </TableRow>
                                   ))}
                               </React.Fragment>
@@ -820,6 +989,69 @@ export default function IntegratedMatching() {
                                             </Badge>
                                           ))}
                                         </div>
+                                      </TableCell>
+                                      <TableCell className="py-2">
+                                        {/* Pitch Generation Button */}
+                                        {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
+                                          <Button variant="outline" size="sm" disabled>
+                                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                            Generating...
+                                          </Button>
+                                        ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
+                                          <Sheet>
+                                            <SheetTrigger asChild>
+                                              <Button variant="outline" size="sm">
+                                                <Sparkles className="h-3 w-3 mr-1" />
+                                                View Pitch
+                                              </Button>
+                                            </SheetTrigger>
+                                            <SheetContent className="sm:max-w-md">
+                                              <SheetHeader>
+                                                <SheetTitle>Generated Pitch</SheetTitle>
+                                                <SheetDescription>
+                                                  For {result.cvName} matching {result.rfpTitle}
+                                                </SheetDescription>
+                                              </SheetHeader>
+                                              <div className="mt-4 relative">
+                                                <div className="prose prose-sm max-h-[60vh] overflow-y-auto p-4 border rounded-md bg-muted/20 whitespace-pre-line">
+                                                  {pitches[`${result.cvId}-${result.rfpId}`]}
+                                                </div>
+                                                <Button 
+                                                  size="sm" 
+                                                  variant="secondary" 
+                                                  className="absolute top-2 right-2"
+                                                  onClick={() => copyPitch(`${result.cvId}-${result.rfpId}`)}
+                                                >
+                                                  <Copy className="h-3 w-3 mr-1" />
+                                                  Copy
+                                                </Button>
+                                              </div>
+                                              <SheetFooter className="mt-4">
+                                                <SheetClose asChild>
+                                                  <Button type="button" variant="outline">
+                                                    Close
+                                                  </Button>
+                                                </SheetClose>
+                                                <Button 
+                                                  type="button" 
+                                                  onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                                                >
+                                                  <Sparkles className="h-3 w-3 mr-1" />
+                                                  Regenerate
+                                                </Button>
+                                              </SheetFooter>
+                                            </SheetContent>
+                                          </Sheet>
+                                        ) : (
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                                          >
+                                            <Sparkles className="h-3 w-3 mr-1" />
+                                            Generate Pitch
+                                          </Button>
+                                        )}
                                       </TableCell>
                                     </TableRow>
                                   ))}
