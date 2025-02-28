@@ -209,7 +209,7 @@ function CollapsibleMatchRun({
                     {results
                       .sort((a, b) => b.score - a.score)
                       .map((result, idx) => (
-                        <TableRow key={`${cvId}-${result.rfpId}`} className="border-0">
+                        <TableRow key={`${cvId}-${result.rfpId}`}>
                           <TableCell className="pl-6 py-2"></TableCell>
                           <TableCell className="py-2">{result.rfpTitle}</TableCell>
                           <TableCell className="py-2 w-[100px]">
@@ -318,7 +318,7 @@ function CollapsibleMatchRun({
                     {results
                       .sort((a, b) => b.score - a.score)
                       .map((result, idx) => (
-                        <TableRow key={`${rfpId}-${result.cvId}`} className="border-0">
+                        <TableRow key={`${rfpId}-${result.cvId}`}>
                           <TableCell className="pl-6 py-2"></TableCell>
                           <TableCell className="py-2">{result.cvName}</TableCell>
                           <TableCell className="py-2 w-[100px]">
