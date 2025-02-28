@@ -169,17 +169,17 @@ function CollapsibleMatchRun({
                   <>
                     <TableHead className="py-1">CV</TableHead>
                     <TableHead className="py-1">RFP</TableHead>
-                    <TableHead className="py-1">Match Score</TableHead>
+                    <TableHead className="py-1 w-[100px]">Match Score</TableHead>
                     <TableHead className="py-1">Matched Keywords</TableHead>
-                    <TableHead className="py-1">Actions</TableHead>
+                    <TableHead className="py-1 w-[160px] text-center">Actions</TableHead>
                   </>
                 ) : (
                   <>
                     <TableHead className="py-1">RFP</TableHead>
                     <TableHead className="py-1">CV</TableHead>
-                    <TableHead className="py-1">Match Score</TableHead>
+                    <TableHead className="py-1 w-[100px]">Match Score</TableHead>
                     <TableHead className="py-1">Matched Keywords</TableHead>
-                    <TableHead className="py-1">Actions</TableHead>
+                    <TableHead className="py-1 w-[160px] text-center">Actions</TableHead>
                   </>
                 )}
               </TableRow>
@@ -212,7 +212,7 @@ function CollapsibleMatchRun({
                         <TableRow key={`${cvId}-${result.rfpId}`} className="border-0">
                           <TableCell className="pl-6 py-2"></TableCell>
                           <TableCell className="py-2">{result.rfpTitle}</TableCell>
-                          <TableCell className="py-2">
+                          <TableCell className="py-2 w-[100px]">
                             <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
                               {result.score}%
                             </Badge>
@@ -220,23 +220,23 @@ function CollapsibleMatchRun({
                           <TableCell className="py-2">
                             <div className="flex flex-wrap gap-1">
                               {result.matchedKeywords.map((keyword, i) => (
-                                <Badge key={i} variant="outline">
+                                <Badge key={i} variant="outline" className="px-1.5 py-0 text-xs">
                                   {keyword}
                                 </Badge>
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell className="py-2">
+                          <TableCell className="py-2 w-[160px] text-center">
                             {/* Pitch Generation Button */}
                             {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
-                              <Button variant="outline" size="sm" disabled>
+                              <Button variant="outline" size="sm" disabled className="px-2.5 h-8 whitespace-nowrap">
                                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                                 Generating...
                               </Button>
                             ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
                               <Sheet>
                                 <SheetTrigger asChild>
-                                  <Button variant="outline" size="sm">
+                                  <Button variant="outline" size="sm" className="px-2.5 h-8 whitespace-nowrap">
                                     <Sparkles className="h-3 w-3 mr-1" />
                                     View Pitch
                                   </Button>
@@ -245,7 +245,7 @@ function CollapsibleMatchRun({
                                   <SheetHeader>
                                     <SheetTitle>Generated Pitch</SheetTitle>
                                     <SheetDescription>
-                                      For {result.cvName} matching {result.rfpTitle}
+                                      For {results[0].cvName} matching {result.rfpTitle}
                                     </SheetDescription>
                                   </SheetHeader>
                                   <div className="mt-4 relative">
@@ -282,6 +282,7 @@ function CollapsibleMatchRun({
                               <Button 
                                 variant="outline" 
                                 size="sm"
+                                className="px-2.5 h-8 whitespace-nowrap"
                                 onClick={() => generatePitch(result.cvId, result.rfpId, result)}
                               >
                                 <Sparkles className="h-3 w-3 mr-1" />
@@ -320,7 +321,7 @@ function CollapsibleMatchRun({
                         <TableRow key={`${rfpId}-${result.cvId}`} className="border-0">
                           <TableCell className="pl-6 py-2"></TableCell>
                           <TableCell className="py-2">{result.cvName}</TableCell>
-                          <TableCell className="py-2">
+                          <TableCell className="py-2 w-[100px]">
                             <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
                               {result.score}%
                             </Badge>
@@ -328,23 +329,23 @@ function CollapsibleMatchRun({
                           <TableCell className="py-2">
                             <div className="flex flex-wrap gap-1">
                               {result.matchedKeywords.map((keyword, i) => (
-                                <Badge key={i} variant="outline">
+                                <Badge key={i} variant="outline" className="px-1.5 py-0 text-xs">
                                   {keyword}
                                 </Badge>
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell className="py-2">
+                          <TableCell className="py-2 w-[160px] text-center">
                             {/* Pitch Generation Button */}
                             {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
-                              <Button variant="outline" size="sm" disabled>
+                              <Button variant="outline" size="sm" disabled className="px-2.5 h-8 whitespace-nowrap">
                                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                                 Generating...
                               </Button>
                             ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
                               <Sheet>
                                 <SheetTrigger asChild>
-                                  <Button variant="outline" size="sm">
+                                  <Button variant="outline" size="sm" className="px-2.5 h-8 whitespace-nowrap">
                                     <Sparkles className="h-3 w-3 mr-1" />
                                     View Pitch
                                   </Button>
@@ -390,6 +391,7 @@ function CollapsibleMatchRun({
                               <Button 
                                 variant="outline" 
                                 size="sm"
+                                className="px-2.5 h-8 whitespace-nowrap"
                                 onClick={() => generatePitch(result.cvId, result.rfpId, result)}
                               >
                                 <Sparkles className="h-3 w-3 mr-1" />
