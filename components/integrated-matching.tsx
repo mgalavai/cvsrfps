@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs"
 
 type CV = {
   id: string
@@ -78,6 +83,7 @@ export default function IntegratedMatching() {
   const [matchResults, setMatchResults] = useState<MatchResult[]>([])
   const [matchHistory, setMatchHistory] = useState<MatchRun[]>([])
   const [timeframeFilter, setTimeframeFilter] = useState<string>("all")
+  const [groupByFilter, setGroupByFilter] = useState<"cv" | "rfp">("cv")
   const [isMatching, setIsMatching] = useState(false)
   
   // Collapsible state
@@ -525,6 +531,7 @@ export default function IntegratedMatching() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Show:</span>
                 <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
                   <SelectTrigger className="w-[180px]">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -538,6 +545,16 @@ export default function IntegratedMatching() {
                     <SelectItem value="thisMonth">This month</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Group by:</span>
+                <Tabs value={groupByFilter} onValueChange={(value) => setGroupByFilter(value as "cv" | "rfp")}>
+                  <TabsList>
+                    <TabsTrigger value="cv">CV</TabsTrigger>
+                    <TabsTrigger value="rfp">RFP</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
             </div>
             
@@ -596,33 +613,115 @@ export default function IntegratedMatching() {
                       <Table>
                         <TableHeader className="bg-muted/30">
                           <TableRow>
-                            <TableHead>CV</TableHead>
-                            <TableHead>RFP</TableHead>
-                            <TableHead>Match Score</TableHead>
-                            <TableHead>Matched Keywords</TableHead>
+                            {groupByFilter === "cv" ? (
+                              <>
+                                <TableHead>CV</TableHead>
+                                <TableHead>RFP</TableHead>
+                                <TableHead>Match Score</TableHead>
+                                <TableHead>Matched Keywords</TableHead>
+                              </>
+                            ) : (
+                              <>
+                                <TableHead>RFP</TableHead>
+                                <TableHead>CV</TableHead>
+                                <TableHead>Match Score</TableHead>
+                                <TableHead>Matched Keywords</TableHead>
+                              </>
+                            )}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {matchRun.results.map((result, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{result.cvName}</TableCell>
-                              <TableCell>{result.rfpTitle}</TableCell>
-                              <TableCell>
-                                <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
-                                  {result.score}%
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {result.matchedKeywords.map((keyword, i) => (
-                                    <Badge key={i} variant="outline">
-                                      {keyword}
-                                    </Badge>
+                          {groupByFilter === "cv" ? (
+                            // Group by CV
+                            Array.from(
+                              // Create a Map of CV ID to results for that CV
+                              matchRun.results.reduce((map, result) => {
+                                if (!map.has(result.cvId)) {
+                                  map.set(result.cvId, []);
+                                }
+                                map.get(result.cvId)?.push(result);
+                                return map;
+                              }, new Map<string, MatchResult[]>())
+                            ).map(([cvId, results]) => (
+                              <React.Fragment key={cvId}>
+                                {/* Header row for the CV */}
+                                <TableRow className="bg-muted/5">
+                                  <TableCell className="font-bold">{results[0].cvName}</TableCell>
+                                  <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                                    {results.length} matching RFPs
+                                  </TableCell>
+                                </TableRow>
+                                {/* Individual result rows */}
+                                {results
+                                  .sort((a, b) => b.score - a.score)
+                                  .map((result, idx) => (
+                                    <TableRow key={`${cvId}-${result.rfpId}`} className="border-0">
+                                      <TableCell className="pl-6 py-2"></TableCell>
+                                      <TableCell className="py-2">{result.rfpTitle}</TableCell>
+                                      <TableCell className="py-2">
+                                        <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
+                                          {result.score}%
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="py-2">
+                                        <div className="flex flex-wrap gap-1">
+                                          {result.matchedKeywords.map((keyword, i) => (
+                                            <Badge key={i} variant="outline">
+                                              {keyword}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
                                   ))}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                              </React.Fragment>
+                            ))
+                          ) : (
+                            // Group by RFP
+                            Array.from(
+                              // Create a Map of RFP ID to results for that RFP
+                              matchRun.results.reduce((map, result) => {
+                                if (!map.has(result.rfpId)) {
+                                  map.set(result.rfpId, []);
+                                }
+                                map.get(result.rfpId)?.push(result);
+                                return map;
+                              }, new Map<string, MatchResult[]>())
+                            ).map(([rfpId, results]) => (
+                              <React.Fragment key={rfpId}>
+                                {/* Header row for the RFP */}
+                                <TableRow className="bg-muted/5">
+                                  <TableCell className="font-bold">{results[0].rfpTitle}</TableCell>
+                                  <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                                    {results.length} matching CVs
+                                  </TableCell>
+                                </TableRow>
+                                {/* Individual result rows */}
+                                {results
+                                  .sort((a, b) => b.score - a.score)
+                                  .map((result, idx) => (
+                                    <TableRow key={`${rfpId}-${result.cvId}`} className="border-0">
+                                      <TableCell className="pl-6 py-2"></TableCell>
+                                      <TableCell className="py-2">{result.cvName}</TableCell>
+                                      <TableCell className="py-2">
+                                        <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
+                                          {result.score}%
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="py-2">
+                                        <div className="flex flex-wrap gap-1">
+                                          {result.matchedKeywords.map((keyword, i) => (
+                                            <Badge key={i} variant="outline">
+                                              {keyword}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                              </React.Fragment>
+                            ))
+                          )}
                         </TableBody>
                       </Table>
                     </div>

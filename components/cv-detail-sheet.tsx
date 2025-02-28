@@ -12,6 +12,12 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs"
 
 interface CV {
   id: string
@@ -108,43 +114,29 @@ export function CVDetailSheet({
         </SheetHeader>
         
         <div className="py-4">
-          {/* Custom tab navigation */}
-          <div className="flex w-full border rounded-lg mb-4">
-            <button
-              onClick={() => setActiveView("pdf")}
-              className={`flex items-center justify-center py-2 px-4 flex-1 rounded-l-lg ${
-                activeView === "pdf"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              }`}
-            >
-              <FileDown className="h-4 w-4 mr-2" />
-              View Original
-            </button>
-            <button
-              onClick={() => setActiveView("content")}
-              className={`flex items-center justify-center py-2 px-4 flex-1 rounded-r-lg ${
-                activeView === "content"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              }`}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Edit Content
-            </button>
-          </div>
-          
-          {/* View PDF content */}
-          {activeView === "pdf" && (
-            <div className="h-[60vh] flex flex-col">
+          {/* Tabs navigation using shadcn Tabs */}
+          <Tabs defaultValue="pdf" value={activeView} onValueChange={(value) => setActiveView(value as "pdf" | "content")} className="w-full mb-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="pdf">
+                <FileDown className="h-4 w-4 mr-2" />
+                View Original
+              </TabsTrigger>
+              <TabsTrigger value="content">
+                <FileText className="h-4 w-4 mr-2" />
+                Edit Content
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* View PDF content */}
+            <TabsContent value="pdf" className="mt-2">
               {cv.pdfUrl ? (
                 <iframe 
                   src={cv.pdfUrl} 
-                  className="w-full h-full border rounded"
+                  className="w-full h-[60vh] border rounded"
                   title={`${cv.firstName} ${cv.lastName}'s CV`}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-md">
+                <div className="flex flex-col items-center justify-center h-[60vh] bg-muted/30 rounded-md">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground text-center">
                     In a production environment, the original PDF would be displayed here.<br />
@@ -160,16 +152,14 @@ export function CVDetailSheet({
                   </Button>
                 </div>
               )}
-            </div>
-          )}
-          
-          {/* Edit content */}
-          {activeView === "content" && (
-            <div className="h-[60vh] flex flex-col">
+            </TabsContent>
+            
+            {/* Edit content */}
+            <TabsContent value="content" className="mt-2">
               <Textarea 
                 value={editedContent} 
                 onChange={(e) => setEditedContent(e.target.value)}
-                className="flex-1 resize-none min-h-[400px] font-mono text-sm"
+                className="resize-none h-[60vh] font-mono text-sm"
                 placeholder="CV content appears here"
               />
               <div className="flex justify-between mt-4">
@@ -189,8 +179,8 @@ export function CVDetailSheet({
                   {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
       </SheetContent>
     </Sheet>
