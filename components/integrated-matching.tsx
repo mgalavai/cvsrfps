@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2 } from "lucide-react"
-import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs } from "@/app/actions"
+import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs, saveCV, reanalyzeCVContent, saveRFP } from "@/app/actions"
 import RFPForm from "@/components/rfp-form"
 import { CVTable } from "@/components/cv-table"
 import { RFPTable } from "@/components/rfp-table"
@@ -89,23 +89,23 @@ export default function IntegratedMatching() {
     setCvs([
       {
         id: "1",
-        name: "John_Doe_CV.pdf",
-        firstName: "John",
-        lastName: "Doe",
+        name: "Alex_Chen_CV.pdf",
+        firstName: "Alex",
+        lastName: "Chen",
         content: "Software Engineer with 5 years of experience in React, Node.js, and TypeScript.",
       },
       {
         id: "2",
-        name: "Jane_Smith_CV.pdf",
-        firstName: "Jane",
-        lastName: "Smith",
+        name: "Priya_Sharma_CV.pdf",
+        firstName: "Priya",
+        lastName: "Sharma",
         content: "UX Designer with expertise in Figma, user research, and prototyping.",
       },
       {
         id: "3",
-        name: "Bob_Johnson_CV.pdf",
-        firstName: "Bob",
-        lastName: "Johnson",
+        name: "Marcus_Rodriguez_CV.pdf",
+        firstName: "Marcus",
+        lastName: "Rodriguez",
         content: "Project Manager with PMP certification and 7 years of experience in Agile methodologies.",
       },
     ])
@@ -143,7 +143,7 @@ export default function IntegratedMatching() {
         results: [
           {
             cvId: "1",
-            cvName: "John_Doe_CV.pdf",
+            cvName: "Alex_Chen_CV.pdf",
             rfpId: "1",
             rfpTitle: "Frontend Developer",
             score: 85,
@@ -151,7 +151,7 @@ export default function IntegratedMatching() {
           },
           {
             cvId: "2",
-            cvName: "Jane_Smith_CV.pdf",
+            cvName: "Priya_Sharma_CV.pdf",
             rfpId: "1",
             rfpTitle: "Frontend Developer",
             score: 35,
@@ -159,7 +159,7 @@ export default function IntegratedMatching() {
           },
           {
             cvId: "1",
-            cvName: "John_Doe_CV.pdf",
+            cvName: "Alex_Chen_CV.pdf",
             rfpId: "3",
             rfpTitle: "Technical Project Manager",
             score: 25,
@@ -167,7 +167,7 @@ export default function IntegratedMatching() {
           },
           {
             cvId: "2",
-            cvName: "Jane_Smith_CV.pdf",
+            cvName: "Priya_Sharma_CV.pdf",
             rfpId: "3",
             rfpTitle: "Technical Project Manager",
             score: 15,
@@ -183,7 +183,7 @@ export default function IntegratedMatching() {
         results: [
           {
             cvId: "2",
-            cvName: "Jane_Smith_CV.pdf",
+            cvName: "Priya_Sharma_CV.pdf",
             rfpId: "2",
             rfpTitle: "UX/UI Designer",
             score: 92,
@@ -191,7 +191,7 @@ export default function IntegratedMatching() {
           },
           {
             cvId: "3",
-            cvName: "Bob_Johnson_CV.pdf",
+            cvName: "Marcus_Rodriguez_CV.pdf",
             rfpId: "2",
             rfpTitle: "UX/UI Designer",
             score: 10,
@@ -259,6 +259,40 @@ export default function IntegratedMatching() {
     }
   }
 
+  const handleSaveCV = async (updatedCV: CV) => {
+    try {
+      // Call the server action to save the CV
+      const savedCV = await saveCV(updatedCV)
+      
+      // Update the local state
+      setCvs(prevCVs => prevCVs.map(cv => 
+        cv.id === savedCV.id ? savedCV : cv
+      ))
+      
+      return savedCV
+    } catch (error) {
+      console.error("Error saving CV:", error)
+      throw error
+    }
+  }
+
+  const handleReanalyzeCVContent = async (cv: CV) => {
+    try {
+      // Call the server action to reanalyze the CV
+      const updatedCV = await reanalyzeCVContent(cv)
+      
+      // Update the local state
+      setCvs(prevCVs => prevCVs.map(existingCV => 
+        existingCV.id === updatedCV.id ? updatedCV : existingCV
+      ))
+      
+      return updatedCV
+    } catch (error) {
+      console.error("Error reanalyzing CV:", error)
+      throw error
+    }
+  }
+
   // RFP handlers
   const handleDeleteRFP = async (id: string) => {
     try {
@@ -268,6 +302,23 @@ export default function IntegratedMatching() {
       setSelectedRFPs(selectedRFPs.filter((rfpId) => rfpId !== id))
     } catch (error) {
       console.error("Error deleting RFP:", error)
+    }
+  }
+
+  const handleSaveRFP = async (updatedRFP: RFP) => {
+    try {
+      // Call the server action to save the RFP
+      const savedRFP = await saveRFP(updatedRFP)
+      
+      // Update the local state
+      setRfps(prevRFPs => prevRFPs.map(rfp => 
+        rfp.id === savedRFP.id ? savedRFP : rfp
+      ))
+      
+      return savedRFP
+    } catch (error) {
+      console.error("Error saving RFP:", error)
+      throw error
     }
   }
 
@@ -378,7 +429,6 @@ export default function IntegratedMatching() {
         <CollapsibleSection 
           title="Candidates & Requirements" 
           icon={<Database className="h-5 w-5" />}
-          count={cvs.length + rfps.length}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* CV Section */}
@@ -421,7 +471,14 @@ export default function IntegratedMatching() {
               {cvs.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No CVs uploaded yet.</p>
               ) : (
-                <CVTable data={cvs} selectedCVs={selectedCVs} onToggleSelect={toggleCV} onDelete={handleDeleteCV} />
+                <CVTable 
+                  data={cvs} 
+                  selectedCVs={selectedCVs} 
+                  onToggleSelect={toggleCV} 
+                  onDelete={handleDeleteCV}
+                  onSaveContent={handleSaveCV}
+                  onReanalyze={handleReanalyzeCVContent}
+                />
               )}
             </div>
             
@@ -449,6 +506,7 @@ export default function IntegratedMatching() {
                   selectedRFPs={selectedRFPs}
                   onToggleSelect={toggleRFP}
                   onDelete={handleDeleteRFP}
+                  onSave={handleSaveRFP}
                 />
               )}
             </div>

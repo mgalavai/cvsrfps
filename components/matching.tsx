@@ -44,17 +44,17 @@ export default function Matching() {
     setCvs([
       {
         id: "1",
-        name: "John_Doe_CV.pdf",
+        name: "Alex_Chen_CV.pdf",
         content: "Software Engineer with 5 years of experience in React, Node.js, and TypeScript.",
       },
       {
         id: "2",
-        name: "Jane_Smith_CV.pdf",
+        name: "Priya_Sharma_CV.pdf",
         content: "UX Designer with expertise in Figma, user research, and prototyping.",
       },
       {
         id: "3",
-        name: "Bob_Johnson_CV.pdf",
+        name: "Marcus_Rodriguez_CV.pdf",
         content: "Project Manager with PMP certification and 7 years of experience in Agile methodologies.",
       },
     ])

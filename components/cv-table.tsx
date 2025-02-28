@@ -20,6 +20,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { CVDetailSheet } from "@/components/cv-detail-sheet"
+import { useState } from "react"
 
 interface CV {
   id: string
@@ -29,14 +31,23 @@ interface CV {
   content: string
 }
 
-interface CVTableProps {
+export interface CVTableProps {
   data: CV[]
   selectedCVs: string[]
   onToggleSelect: (id: string) => void
   onDelete: (id: string) => void
+  onSaveContent?: (cv: CV) => Promise<void>
+  onReanalyze?: (cv: CV) => Promise<void>
 }
 
-export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTableProps) {
+export function CVTable({ 
+  data, 
+  selectedCVs, 
+  onToggleSelect, 
+  onDelete,
+  onSaveContent,
+  onReanalyze
+}: CVTableProps) {
   // Mock download function - in a real app, this would download the actual file
   const handleDownload = (cv: CV) => {
     // Create a mock text file with the CV content
@@ -50,6 +61,9 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  const [selectedCV, setSelectedCV] = useState<CV | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   const columns: ColumnDef<CV>[] = [
     {
@@ -124,44 +138,35 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
               <FileDown className="h-4 w-4" />
             </Button>
             
-            {/* View Content Modal */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="View Content"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>{cv.firstName} {cv.lastName}'s CV</DialogTitle>
-                  <DialogDescription>Content extracted from the CV</DialogDescription>
-                </DialogHeader>
-                <div className="mt-4 p-4 bg-muted rounded-md">
-                  <pre className="whitespace-pre-wrap">{cv.content}</pre>
-                </div>
-              </DialogContent>
-            </Dialog>
+            {/* View/Edit CV button */}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-8 w-8 p-0"
+              title="View/Edit CV"
+              onClick={() => {
+                setSelectedCV(cv);
+                setDetailOpen(true);
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
             
             {/* More options dropdown with delete */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                >
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                   <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem className="text-destructive" onClick={() => onDelete(cv.id)}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onDelete(cv.id)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -172,14 +177,26 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
     },
   ]
 
-  return <DataTable 
-    columns={columns} 
-    data={data} 
-    filterColumn="name" 
-    placeholder="Filter candidates..." 
-    classNameRow="h-12"
-    classNameCell="py-2"
-    pageSize={5}
-  />
+  return (
+    <>
+      <DataTable
+        columns={columns}
+        data={data}
+        filterColumn="name"
+        placeholder="Filter CVs..."
+        classNameRow="h-12"
+        classNameCell="py-2"
+        pageSize={5}
+      />
+      
+      <CVDetailSheet
+        cv={selectedCV}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onSave={onSaveContent}
+        onReanalyze={onReanalyze}
+      />
+    </>
+  )
 }
 
