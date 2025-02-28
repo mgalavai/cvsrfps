@@ -72,6 +72,7 @@ export function DataTable<TData, TValue>({
       columnFilters,
       pagination,
     },
+    columnResizeMode: "onChange",
   })
 
   return (
@@ -86,8 +87,8 @@ export function DataTable<TData, TValue>({
           />
         </div>
       )}
-      <div className="rounded-md border">
-        <Table>
+      <div className="border rounded-md">
+        <Table className="w-full table-fixed checkbox-compact">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className={classNameRow}>

@@ -55,24 +55,29 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
     {
       id: "select",
       header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => {
-            table.toggleAllPageRowsSelected(!!value)
-            data.forEach((cv) => onToggleSelect(cv.id))
-          }}
-          aria-label="Select all"
-        />
+        <div className="flex justify-center">
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+            onCheckedChange={(value) => {
+              table.toggleAllPageRowsSelected(!!value)
+              data.forEach((cv) => onToggleSelect(cv.id))
+            }}
+            aria-label="Select all"
+          />
+        </div>
       ),
       cell: ({ row }) => (
-        <Checkbox
-          checked={selectedCVs.includes(row.original.id)}
-          onCheckedChange={() => onToggleSelect(row.original.id)}
-          aria-label="Select row"
-        />
+        <div className="flex justify-center">
+          <Checkbox
+            checked={selectedCVs.includes(row.original.id)}
+            onCheckedChange={() => onToggleSelect(row.original.id)}
+            aria-label="Select row"
+          />
+        </div>
       ),
       enableSorting: false,
       enableHiding: false,
+      size: 20,
     },
     {
       accessorKey: "name",
@@ -95,10 +100,11 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
         
         return (
           <div className="flex items-center">
-            <span className="font-medium">{fullName}</span>
+            <span className="font-medium truncate" title={fullName}>{fullName}</span>
           </div>
         )
       },
+      size: 400,
     },
     {
       id: "actions",
@@ -162,6 +168,7 @@ export function CVTable({ data, selectedCVs, onToggleSelect, onDelete }: CVTable
           </div>
         )
       },
+      size: 120,
     },
   ]
 

@@ -32,24 +32,29 @@ export function RFPTable({ data, selectedRFPs, onToggleSelect, onDelete }: RFPTa
     {
       id: "select",
       header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => {
-            table.toggleAllPageRowsSelected(!!value)
-            data.forEach((rfp) => onToggleSelect(rfp.id))
-          }}
-          aria-label="Select all"
-        />
+        <div className="flex justify-center">
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+            onCheckedChange={(value) => {
+              table.toggleAllPageRowsSelected(!!value)
+              data.forEach((rfp) => onToggleSelect(rfp.id))
+            }}
+            aria-label="Select all"
+          />
+        </div>
       ),
       cell: ({ row }) => (
-        <Checkbox
-          checked={selectedRFPs.includes(row.original.id)}
-          onCheckedChange={() => onToggleSelect(row.original.id)}
-          aria-label="Select row"
-        />
+        <div className="flex justify-center">
+          <Checkbox
+            checked={selectedRFPs.includes(row.original.id)}
+            onCheckedChange={() => onToggleSelect(row.original.id)}
+            aria-label="Select row"
+          />
+        </div>
       ),
       enableSorting: false,
       enableHiding: false,
+      size: 20,
     },
     {
       accessorKey: "title",
@@ -65,12 +70,14 @@ export function RFPTable({ data, selectedRFPs, onToggleSelect, onDelete }: RFPTa
           </Button>
         )
       },
-      cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
+      cell: ({ row }) => <div className="font-medium truncate" title={row.original.title}>{row.original.title}</div>,
+      size: 250,
     },
     {
       accessorKey: "requirements",
       header: "Requirements",
-      cell: ({ row }) => <div className="truncate max-w-[300px]">{row.original.requirements}</div>,
+      cell: ({ row }) => <div className="truncate" title={row.original.requirements}>{row.original.requirements}</div>,
+      size: 350,
     },
     {
       id: "actions",
@@ -98,6 +105,7 @@ export function RFPTable({ data, selectedRFPs, onToggleSelect, onDelete }: RFPTa
           </DropdownMenu>
         </div>
       ),
+      size: 50,
     },
   ]
 

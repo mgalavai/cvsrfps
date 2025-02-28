@@ -7,12 +7,30 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, FilePlus, Database } from "lucide-react"
+import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2 } from "lucide-react"
 import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs } from "@/app/actions"
 import RFPForm from "@/components/rfp-form"
 import { CVTable } from "@/components/cv-table"
 import { RFPTable } from "@/components/rfp-table"
 import { CollapsibleSection, StickyHeader } from "@/components/collapsible-sections"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 type CV = {
   id: string
@@ -38,6 +56,14 @@ type MatchResult = {
   matchedKeywords: string[]
 }
 
+type MatchRun = {
+  id: string
+  timestamp: Date
+  results: MatchResult[]
+  selectedCVs: string[]
+  selectedRFPs: string[]
+}
+
 export default function IntegratedMatching() {
   // CV state
   const [cvs, setCvs] = useState<CV[]>([])
@@ -50,6 +76,8 @@ export default function IntegratedMatching() {
   const [selectedCVs, setSelectedCVs] = useState<string[]>([])
   const [selectedRFPs, setSelectedRFPs] = useState<string[]>([])
   const [matchResults, setMatchResults] = useState<MatchResult[]>([])
+  const [matchHistory, setMatchHistory] = useState<MatchRun[]>([])
+  const [timeframeFilter, setTimeframeFilter] = useState<string>("all")
   const [isMatching, setIsMatching] = useState(false)
   
   // Collapsible state
@@ -103,6 +131,78 @@ export default function IntegratedMatching() {
       },
     ])
   }, [])
+
+  // Load historical matches for demo
+  useEffect(() => {
+    const mockMatchHistory: MatchRun[] = [
+      {
+        id: "mr-1",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+        selectedCVs: ["1", "2"],
+        selectedRFPs: ["1", "3"],
+        results: [
+          {
+            cvId: "1",
+            cvName: "John_Doe_CV.pdf",
+            rfpId: "1",
+            rfpTitle: "Frontend Developer",
+            score: 85,
+            matchedKeywords: ["React", "TypeScript", "experience"]
+          },
+          {
+            cvId: "2",
+            cvName: "Jane_Smith_CV.pdf",
+            rfpId: "1",
+            rfpTitle: "Frontend Developer",
+            score: 35,
+            matchedKeywords: ["experience"]
+          },
+          {
+            cvId: "1",
+            cvName: "John_Doe_CV.pdf",
+            rfpId: "3",
+            rfpTitle: "Technical Project Manager",
+            score: 25,
+            matchedKeywords: ["experience"]
+          },
+          {
+            cvId: "2",
+            cvName: "Jane_Smith_CV.pdf",
+            rfpId: "3",
+            rfpTitle: "Technical Project Manager",
+            score: 15,
+            matchedKeywords: []
+          }
+        ]
+      },
+      {
+        id: "mr-2",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
+        selectedCVs: ["2", "3"],
+        selectedRFPs: ["2"],
+        results: [
+          {
+            cvId: "2",
+            cvName: "Jane_Smith_CV.pdf",
+            rfpId: "2",
+            rfpTitle: "UX/UI Designer",
+            score: 92,
+            matchedKeywords: ["Figma", "user", "prototyping", "wireframing"]
+          },
+          {
+            cvId: "3",
+            cvName: "Bob_Johnson_CV.pdf",
+            rfpId: "2",
+            rfpTitle: "UX/UI Designer",
+            score: 10,
+            matchedKeywords: []
+          }
+        ]
+      }
+    ];
+    
+    setMatchHistory(mockMatchHistory);
+  }, []);
 
   // CV handlers
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,6 +280,52 @@ export default function IntegratedMatching() {
     setSelectedRFPs((prev) => (prev.includes(id) ? prev.filter((rfpId) => rfpId !== id) : [...prev, id]))
   }
 
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    }).format(date);
+  };
+
+  // Handle match deletion
+  const handleDeleteMatch = (id: string) => {
+    setMatchHistory(prev => prev.filter(match => match.id !== id));
+  };
+
+  // Filter history based on timeframe
+  const getFilteredHistory = () => {
+    const now = new Date();
+    
+    switch(timeframeFilter) {
+      case "today":
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return matchHistory.filter(match => match.timestamp >= startOfToday);
+        
+      case "yesterday":
+        const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const endOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return matchHistory.filter(match => 
+          match.timestamp >= startOfYesterday && match.timestamp < endOfYesterday
+        );
+        
+      case "thisWeek":
+        const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+        return matchHistory.filter(match => match.timestamp >= startOfWeek);
+        
+      case "thisMonth":
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return matchHistory.filter(match => match.timestamp >= startOfMonth);
+        
+      default: // "all"
+        return matchHistory;
+    }
+  };
+
   const handleMatch = async () => {
     if (selectedCVs.length === 0 || selectedRFPs.length === 0) return
 
@@ -191,8 +337,19 @@ export default function IntegratedMatching() {
 
       // Call the server action to match CVs to RFPs
       const results = await matchCVsToRFPs(selectedCVData, selectedRFPData)
-      setMatchResults(results)
-      setIsMatching(false)
+      
+      // Store the results in history
+      const newMatchRun: MatchRun = {
+        id: `mr-${Date.now()}`,
+        timestamp: new Date(),
+        results: results,
+        selectedCVs: [...selectedCVs],
+        selectedRFPs: [...selectedRFPs]
+      };
+      
+      setMatchHistory(prev => [newMatchRun, ...prev]);
+      setMatchResults(results);
+      setIsMatching(false);
     } catch (error) {
       console.error("Error matching CVs to RFPs:", error)
       setIsMatching(false)
@@ -308,59 +465,117 @@ export default function IntegratedMatching() {
 
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-emphasis">
-                Selected: {selectedCVs.length} CVs and {selectedRFPs.length} RFPs
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Select timeframe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="thisWeek">This week</SelectItem>
+                    <SelectItem value="thisMonth">This month</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
             <Button
               onClick={handleMatch}
               disabled={isMatching || selectedCVs.length === 0 || selectedRFPs.length === 0}
               className="px-8 font-medium"
             >
-              {isMatching ? "Matching..." : "Match Selected"}
+              {isMatching 
+                ? "Matching..." 
+                : `Match Selected (${selectedCVs.length} CVs + ${selectedRFPs.length} RFPs)`}
             </Button>
           </div>
 
-          {matchResults.length > 0 ? (
-            <div className="overflow-hidden">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead>CV</TableHead>
-                    <TableHead>RFP</TableHead>
-                    <TableHead>Match Score</TableHead>
-                    <TableHead>Matched Keywords</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {matchResults.map((result, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{result.cvName}</TableCell>
-                      <TableCell>{result.rfpTitle}</TableCell>
-                      <TableCell>
-                        <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
-                          {result.score}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {result.matchedKeywords.map((keyword, i) => (
-                            <Badge key={i} variant="outline">
-                              {keyword}
-                            </Badge>
+          {getFilteredHistory().length > 0 ? (
+            <div className="space-y-4">
+              {getFilteredHistory().map((matchRun) => (
+                <Collapsible key={matchRun.id} className="border rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
+                    <div>
+                      <div className="font-medium">{formatDate(matchRun.timestamp)}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {matchRun.selectedCVs.length} CVs × {matchRun.selectedRFPs.length} RFPs = {matchRun.results.length} matches
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteMatch(matchRun.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete this run
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <ChevronDown className="h-4 w-4" />
+                          <span className="sr-only">Toggle</span>
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                  </div>
+                  
+                  <CollapsibleContent>
+                    <div className="overflow-hidden">
+                      <Table>
+                        <TableHeader className="bg-muted/30">
+                          <TableRow>
+                            <TableHead>CV</TableHead>
+                            <TableHead>RFP</TableHead>
+                            <TableHead>Match Score</TableHead>
+                            <TableHead>Matched Keywords</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {matchRun.results.map((result, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{result.cvName}</TableCell>
+                              <TableCell>{result.rfpTitle}</TableCell>
+                              <TableCell>
+                                <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
+                                  {result.score}%
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {result.matchedKeywords.map((keyword, i) => (
+                                    <Badge key={i} variant="outline">
+                                      {keyword}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
             </div>
           ) : (
             <div className="text-center p-8 bg-muted/10">
-              <p className="text-muted-foreground mb-2">No matches yet</p>
-              <p className="text-sm">Select CVs and RFPs above and click "Match Selected" to see results</p>
+              <p className="text-muted-foreground mb-2">No matches found for the selected timeframe</p>
+              <p className="text-sm">Try selecting a different timeframe or run a new match</p>
             </div>
           )}
         </div>
