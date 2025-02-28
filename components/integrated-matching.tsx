@@ -12,7 +12,7 @@ import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs, saveCV, reanalyzeCVConte
 import RFPForm from "@/components/rfp-form"
 import { CVTable } from "@/components/cv-table"
 import { RFPTable } from "@/components/rfp-table"
-import { CollapsibleSection, StickyHeader } from "@/components/collapsible-sections"
+import { CollapsibleSection, StickyHeader, MainNavigation } from "@/components/collapsible-sections"
 import {
   Collapsible,
   CollapsibleContent,
@@ -429,9 +429,12 @@ export default function IntegratedMatching() {
   const [groupByFilter, setGroupByFilter] = useState<"cv" | "rfp">("cv")
   const [isMatching, setIsMatching] = useState(false)
   
-  // Collapsible state
-  const [dataSectionOpen, setDataSectionOpen] = useState(true)
+  // Navigation state
+  const [activeSection, setActiveSection] = useState<"data" | "results">("data")
+  
+  // Refs for scrolling to sections
   const dataSectionRef = useRef<HTMLDivElement>(null)
+  const resultsSectionRef = useRef<HTMLDivElement>(null)
 
   // Add default settings constant
   const DEFAULT_MATCH_SETTINGS = {
@@ -566,6 +569,38 @@ export default function IntegratedMatching() {
     ];
     
     setMatchHistory(mockMatchHistory);
+  }, []);
+
+  // Use Intersection Observer to track which section is visible
+  useEffect(() => {
+    const options = {
+      root: null,
+      rootMargin: '-100px 0px', // Adjust for header height
+      threshold: 0.1
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          if (entry.target === dataSectionRef.current) {
+            setActiveSection("data");
+          } else if (entry.target === resultsSectionRef.current) {
+            setActiveSection("results");
+          }
+        }
+      });
+    }, options);
+    
+    if (dataSectionRef.current) {
+      observer.observe(dataSectionRef.current);
+    }
+    if (resultsSectionRef.current) {
+      observer.observe(resultsSectionRef.current);
+    }
+    
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   // CV handlers
@@ -791,8 +826,13 @@ export default function IntegratedMatching() {
   }
 
   const scrollToDataSection = () => {
-    setDataSectionOpen(true)
     dataSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setActiveSection("data")
+  }
+  
+  const scrollToResultsSection = () => {
+    resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setActiveSection("results")
   }
 
   // Handle settings change
@@ -891,16 +931,11 @@ ${cvData.firstName} ${cvData.lastName}
   };
 
   return (
-    <div className="space-y-8">
-      <StickyHeader 
-        cvCount={cvs.length} 
-        rfpCount={rfps.length} 
-        onExpandCV={() => scrollToDataSection()} 
-        onExpandRFP={() => scrollToDataSection()} 
-        selectedCVCount={selectedCVs.length}
-        selectedRFPCount={selectedRFPs.length}
-        onMatch={handleMatch}
-        isMatchingDisabled={isMatching || selectedCVs.length === 0 || selectedRFPs.length === 0}
+    <div className="space-y-8 pb-20">
+      <MainNavigation 
+        onScrollToData={scrollToDataSection}
+        onScrollToResults={scrollToResultsSection}
+        activeSection={activeSection}
       />
 
       <div ref={dataSectionRef}>
@@ -1009,7 +1044,7 @@ ${cvData.firstName} ${cvData.lastName}
       </div>
 
       {/* Matching Section */}
-      <div className="py-6">
+      <div className="py-6" ref={resultsSectionRef}>
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <Layers className="h-5 w-5" />
@@ -1149,6 +1184,22 @@ ${cvData.firstName} ${cvData.lastName}
           )}
         </div>
       </div>
+      
+      {/* Add a floating action button for matching when scrolled to the results section */}
+      {activeSection === "results" && selectedCVs.length > 0 && selectedRFPs.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-10">
+          <Button
+            onClick={handleMatch}
+            disabled={isMatching}
+            className="shadow-lg"
+            size="lg"
+          >
+            {isMatching 
+              ? "Matching..." 
+              : `Match (${selectedCVs.length} CVs + ${selectedRFPs.length} RFPs)`}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

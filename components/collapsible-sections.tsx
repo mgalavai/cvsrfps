@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, FileText, FilePlus } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, FilePlus, Layers, UserIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 type SectionProps = {
   title: string
@@ -37,6 +38,65 @@ export function CollapsibleSection({ title, icon, children, count }: SectionProp
       </Collapsible>
     </div>
   )
+}
+
+export function MainNavigation({ 
+  onScrollToData,
+  onScrollToResults,
+  activeSection = "data"
+}: { 
+  onScrollToData: () => void
+  onScrollToResults: () => void
+  activeSection?: "data" | "results"
+}) {
+  return (
+    <div className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
+      <div className="flex h-14 items-center px-4">
+        <div className="flex items-center">
+          <Image 
+            src="/images/knightech.png" 
+            alt="Knightech Group" 
+            width={140} 
+            height={32}
+            className="h-8 w-auto" 
+            priority
+          />
+        </div>
+        
+        <div className="flex justify-center flex-1">
+          <div className="flex gap-4">
+            <button 
+              onClick={onScrollToData}
+              className={`flex items-center px-3 py-2 text-sm font-medium transition-colors ${
+                activeSection === "data" 
+                  ? "border-b-2 border-primary text-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Candidates & Requirements
+            </button>
+            <button 
+              onClick={onScrollToResults}
+              className={`flex items-center px-3 py-2 text-sm font-medium transition-colors ${
+                activeSection === "results" 
+                  ? "border-b-2 border-primary text-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Results
+            </button>
+          </div>
+        </div>
+        
+        <div>
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <UserIcon className="h-5 w-5" />
+            <span className="sr-only">Profile</span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function StickyHeader({ 
