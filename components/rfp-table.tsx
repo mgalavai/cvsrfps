@@ -135,8 +135,6 @@ export function RFPTable({
       <DataTable 
         columns={columns} 
         data={data} 
-        filterColumn="position" 
-        placeholder="Filter positions..." 
         classNameRow="h-10"
         classNameCell="py-1"
         pageSize={5}

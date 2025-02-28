@@ -182,8 +182,6 @@ export function CVTable({
       <DataTable
         columns={columns}
         data={data}
-        filterColumn="name"
-        placeholder="Filter CVs..."
         classNameRow="h-10"
         classNameCell="py-1"
         pageSize={5}

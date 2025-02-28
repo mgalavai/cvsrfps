@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2, Settings, Copy, Sparkles, Loader2 } from "lucide-react"
+import { Upload, FileText, FilePlus, Database, MoreHorizontal, ChevronDown, ChevronUp, Calendar, Trash2, Settings, Copy, Sparkles, Loader2, Layers } from "lucide-react"
 import { uploadCV, deleteCV, deleteRFP, matchCVsToRFPs, saveCV, reanalyzeCVContent, saveRFP } from "@/app/actions"
 import RFPForm from "@/components/rfp-form"
 import { CVTable } from "@/components/cv-table"
@@ -85,6 +85,329 @@ type MatchRun = {
   results: MatchResult[]
   selectedCVs: string[]
   selectedRFPs: string[]
+}
+
+// Add this component before the main IntegratedMatching component
+interface CollapsibleMatchRunProps {
+  matchRun: MatchRun;
+  groupByFilter: "cv" | "rfp";
+  onDelete: (id: string) => void;
+  generatePitch: (cv: string, rfp: string, matchResult: MatchResult) => void;
+  generatingPitch: {[key: string]: boolean};
+  pitches: {[key: string]: string};
+  copyPitch: (pitchKey: string) => void;
+}
+
+function CollapsibleMatchRun({ 
+  matchRun, 
+  groupByFilter, 
+  onDelete,
+  generatePitch,
+  generatingPitch,
+  pitches,
+  copyPitch
+}: CollapsibleMatchRunProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    }).format(date);
+  };
+  
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div 
+        className="flex items-center justify-between px-4 py-3 bg-muted/20 cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div>
+          <div className="font-medium">{formatDate(matchRun.timestamp)}</div>
+          <div className="text-sm text-muted-foreground">
+            {matchRun.selectedCVs.length} CVs × {matchRun.selectedRFPs.length} RFPs = {matchRun.results.length} matches
+          </div>
+        </div>
+        <div className="flex items-center">
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onDelete(matchRun.id)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete this run
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          <Button variant="ghost" size="icon">
+            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <span className="sr-only">Toggle</span>
+          </Button>
+        </div>
+      </div>
+      
+      {isOpen && (
+        <div className="overflow-hidden">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="h-8">
+                {groupByFilter === "cv" ? (
+                  <>
+                    <TableHead className="py-1">CV</TableHead>
+                    <TableHead className="py-1">RFP</TableHead>
+                    <TableHead className="py-1">Match Score</TableHead>
+                    <TableHead className="py-1">Matched Keywords</TableHead>
+                    <TableHead className="py-1">Actions</TableHead>
+                  </>
+                ) : (
+                  <>
+                    <TableHead className="py-1">RFP</TableHead>
+                    <TableHead className="py-1">CV</TableHead>
+                    <TableHead className="py-1">Match Score</TableHead>
+                    <TableHead className="py-1">Matched Keywords</TableHead>
+                    <TableHead className="py-1">Actions</TableHead>
+                  </>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {groupByFilter === "cv" ? (
+                // Group by CV
+                Array.from(
+                  // Create a Map of CV ID to results for that CV
+                  matchRun.results.reduce((map, result) => {
+                    if (!map.has(result.cvId)) {
+                      map.set(result.cvId, []);
+                    }
+                    map.get(result.cvId)?.push(result);
+                    return map;
+                  }, new Map<string, MatchResult[]>())
+                ).map(([cvId, results]) => (
+                  <React.Fragment key={cvId}>
+                    {/* Header row for the CV */}
+                    <TableRow className="bg-muted/5 h-8">
+                      <TableCell className="font-bold py-1">{results[0].cvName}</TableCell>
+                      <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
+                        {results.length} matching RFPs
+                      </TableCell>
+                    </TableRow>
+                    {/* Individual result rows */}
+                    {results
+                      .sort((a, b) => b.score - a.score)
+                      .map((result, idx) => (
+                        <TableRow key={`${cvId}-${result.rfpId}`} className="border-0">
+                          <TableCell className="pl-6 py-2"></TableCell>
+                          <TableCell className="py-2">{result.rfpTitle}</TableCell>
+                          <TableCell className="py-2">
+                            <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
+                              {result.score}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <div className="flex flex-wrap gap-1">
+                              {result.matchedKeywords.map((keyword, i) => (
+                                <Badge key={i} variant="outline">
+                                  {keyword}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            {/* Pitch Generation Button */}
+                            {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
+                              <Button variant="outline" size="sm" disabled>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Generating...
+                              </Button>
+                            ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
+                              <Sheet>
+                                <SheetTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Sparkles className="h-3 w-3 mr-1" />
+                                    View Pitch
+                                  </Button>
+                                </SheetTrigger>
+                                <SheetContent className="sm:max-w-md">
+                                  <SheetHeader>
+                                    <SheetTitle>Generated Pitch</SheetTitle>
+                                    <SheetDescription>
+                                      For {result.cvName} matching {result.rfpTitle}
+                                    </SheetDescription>
+                                  </SheetHeader>
+                                  <div className="mt-4 relative">
+                                    <div className="prose prose-sm max-h-[60vh] overflow-y-auto p-4 border rounded-md bg-muted/20 whitespace-pre-line">
+                                      {pitches[`${result.cvId}-${result.rfpId}`]}
+                                    </div>
+                                    <Button 
+                                      size="sm" 
+                                      variant="secondary" 
+                                      className="absolute top-2 right-2"
+                                      onClick={() => copyPitch(`${result.cvId}-${result.rfpId}`)}
+                                    >
+                                      <Copy className="h-3 w-3 mr-1" />
+                                      Copy
+                                    </Button>
+                                  </div>
+                                  <SheetFooter className="mt-4">
+                                    <SheetClose asChild>
+                                      <Button type="button" variant="outline">
+                                        Close
+                                      </Button>
+                                    </SheetClose>
+                                    <Button 
+                                      type="button" 
+                                      onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                                    >
+                                      <Sparkles className="h-3 w-3 mr-1" />
+                                      Regenerate
+                                    </Button>
+                                  </SheetFooter>
+                                </SheetContent>
+                              </Sheet>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Generate Pitch
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </React.Fragment>
+                ))
+              ) : (
+                // Group by RFP
+                Array.from(
+                  // Create a Map of RFP ID to results for that RFP
+                  matchRun.results.reduce((map, result) => {
+                    if (!map.has(result.rfpId)) {
+                      map.set(result.rfpId, []);
+                    }
+                    map.get(result.rfpId)?.push(result);
+                    return map;
+                  }, new Map<string, MatchResult[]>())
+                ).map(([rfpId, results]) => (
+                  <React.Fragment key={rfpId}>
+                    {/* Header row for the RFP */}
+                    <TableRow className="bg-muted/5 h-8">
+                      <TableCell className="font-bold py-1">{results[0].rfpTitle}</TableCell>
+                      <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
+                        {results.length} matching CVs
+                      </TableCell>
+                    </TableRow>
+                    {/* Individual result rows */}
+                    {results
+                      .sort((a, b) => b.score - a.score)
+                      .map((result, idx) => (
+                        <TableRow key={`${rfpId}-${result.cvId}`} className="border-0">
+                          <TableCell className="pl-6 py-2"></TableCell>
+                          <TableCell className="py-2">{result.cvName}</TableCell>
+                          <TableCell className="py-2">
+                            <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
+                              {result.score}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <div className="flex flex-wrap gap-1">
+                              {result.matchedKeywords.map((keyword, i) => (
+                                <Badge key={i} variant="outline">
+                                  {keyword}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            {/* Pitch Generation Button */}
+                            {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
+                              <Button variant="outline" size="sm" disabled>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Generating...
+                              </Button>
+                            ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
+                              <Sheet>
+                                <SheetTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Sparkles className="h-3 w-3 mr-1" />
+                                    View Pitch
+                                  </Button>
+                                </SheetTrigger>
+                                <SheetContent className="sm:max-w-md">
+                                  <SheetHeader>
+                                    <SheetTitle>Generated Pitch</SheetTitle>
+                                    <SheetDescription>
+                                      For {result.cvName} matching {result.rfpTitle}
+                                    </SheetDescription>
+                                  </SheetHeader>
+                                  <div className="mt-4 relative">
+                                    <div className="prose prose-sm max-h-[60vh] overflow-y-auto p-4 border rounded-md bg-muted/20 whitespace-pre-line">
+                                      {pitches[`${result.cvId}-${result.rfpId}`]}
+                                    </div>
+                                    <Button 
+                                      size="sm" 
+                                      variant="secondary" 
+                                      className="absolute top-2 right-2"
+                                      onClick={() => copyPitch(`${result.cvId}-${result.rfpId}`)}
+                                    >
+                                      <Copy className="h-3 w-3 mr-1" />
+                                      Copy
+                                    </Button>
+                                  </div>
+                                  <SheetFooter className="mt-4">
+                                    <SheetClose asChild>
+                                      <Button type="button" variant="outline">
+                                        Close
+                                      </Button>
+                                    </SheetClose>
+                                    <Button 
+                                      type="button" 
+                                      onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                                    >
+                                      <Sparkles className="h-3 w-3 mr-1" />
+                                      Regenerate
+                                    </Button>
+                                  </SheetFooter>
+                                </SheetContent>
+                              </Sheet>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => generatePitch(result.cvId, result.rfpId, result)}
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Generate Pitch
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </React.Fragment>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function IntegratedMatching() {
@@ -597,28 +920,34 @@ ${cvData.firstName} ${cvData.lastName}
                   }
                 </div>
                 
-                <label htmlFor="cv-upload" className="cursor-pointer">
-                  <Button 
-                    disabled={isUploading} 
-                    variant="outline" 
-                    className="flex items-center gap-1"
-                    type="button"
-                    asChild
-                  >
-                    <div>
-                      {isUploading ? "Uploading..." : <Upload className="h-4 w-4 mr-1" />}
-                      {isUploading ? "Uploading..." : "Upload"}
-                    </div>
-                  </Button>
-                  <input
-                    id="cv-upload"
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                    className="hidden"
+                <div className="flex items-center gap-3">
+                  <Input
+                    placeholder="Filter CVs..."
+                    className="w-[180px]"
                   />
-                </label>
+                  <label htmlFor="cv-upload" className="cursor-pointer">
+                    <Button 
+                      disabled={isUploading} 
+                      variant="outline" 
+                      className="flex items-center gap-1"
+                      type="button"
+                      asChild
+                    >
+                      <div>
+                        {isUploading ? "Uploading..." : <Upload className="h-4 w-4 mr-1" />}
+                        {isUploading ? "Uploading..." : "Upload"}
+                      </div>
+                    </Button>
+                    <input
+                      id="cv-upload"
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt"
+                      onChange={handleFileChange}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
               
               {cvs.length === 0 ? (
@@ -648,7 +977,13 @@ ${cvData.firstName} ${cvData.lastName}
                   }
                 </div>
                 
-                <RFPForm onRFPAdded={(newRFP) => setRfps([...rfps, newRFP])} />
+                <div className="flex items-center gap-3">
+                  <Input
+                    placeholder="Filter positions..."
+                    className="w-[180px]"
+                  />
+                  <RFPForm onRFPAdded={(newRFP) => setRfps([...rfps, newRFP])} />
+                </div>
               </div>
               
               {rfps.length === 0 ? (
@@ -670,7 +1005,10 @@ ${cvData.firstName} ${cvData.lastName}
       {/* Matching Section */}
       <div className="py-6">
         <div className="mb-4">
-          <h2 className="text-xl font-bold text-heading mb-1">Match Results</h2>
+          <div className="flex items-center gap-2 mb-1">
+            <Layers className="h-5 w-5" />
+            <h2 className="text-lg font-bold text-heading">Match Results</h2>
+          </div>
           <p className="text-sm text-subtitle">View matching results between selected CVs and RFPs</p>
         </div>
 
@@ -680,16 +1018,21 @@ ${cvData.firstName} ${cvData.lastName}
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Show:</span>
                 <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Select timeframe" />
+                  <SelectTrigger className="w-[180px] px-3">
+                    <div className="flex items-center gap-1 mr-1">
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{timeframeFilter === "all" ? "All time" : 
+                       timeframeFilter === "today" ? "Today" : 
+                       timeframeFilter === "yesterday" ? "Yesterday" : 
+                       timeframeFilter === "thisWeek" ? "This week" : "This month"}</span>
+                    </div>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All time</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="yesterday">Yesterday</SelectItem>
-                    <SelectItem value="thisWeek">This week</SelectItem>
-                    <SelectItem value="thisMonth">This month</SelectItem>
+                  <SelectContent className="min-w-[180px]">
+                    <SelectItem value="all" className="py-1.5">All time</SelectItem>
+                    <SelectItem value="today" className="py-1.5">Today</SelectItem>
+                    <SelectItem value="yesterday" className="py-1.5">Yesterday</SelectItem>
+                    <SelectItem value="thisWeek" className="py-1.5">This week</SelectItem>
+                    <SelectItem value="thisMonth" className="py-1.5">This month</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -780,289 +1123,16 @@ ${cvData.firstName} ${cvData.lastName}
           {getFilteredHistory().length > 0 ? (
             <div className="space-y-4">
               {getFilteredHistory().map((matchRun) => (
-                <Collapsible key={matchRun.id} className="border rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
-                    <div>
-                      <div className="font-medium">{formatDate(matchRun.timestamp)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {matchRun.selectedCVs.length} CVs × {matchRun.selectedRFPs.length} RFPs = {matchRun.results.length} matches
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteMatch(matchRun.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete this run
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <ChevronDown className="h-4 w-4" />
-                          <span className="sr-only">Toggle</span>
-                        </Button>
-                      </CollapsibleTrigger>
-                    </div>
-                  </div>
-                  
-                  <CollapsibleContent>
-                    <div className="overflow-hidden">
-                      <Table>
-                        <TableHeader className="bg-muted/30">
-                          <TableRow className="h-8">
-                            {groupByFilter === "cv" ? (
-                              <>
-                                <TableHead className="py-1">CV</TableHead>
-                                <TableHead className="py-1">RFP</TableHead>
-                                <TableHead className="py-1">Match Score</TableHead>
-                                <TableHead className="py-1">Matched Keywords</TableHead>
-                                <TableHead className="py-1">Actions</TableHead>
-                              </>
-                            ) : (
-                              <>
-                                <TableHead className="py-1">RFP</TableHead>
-                                <TableHead className="py-1">CV</TableHead>
-                                <TableHead className="py-1">Match Score</TableHead>
-                                <TableHead className="py-1">Matched Keywords</TableHead>
-                                <TableHead className="py-1">Actions</TableHead>
-                              </>
-                            )}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {groupByFilter === "cv" ? (
-                            // Group by CV
-                            Array.from(
-                              // Create a Map of CV ID to results for that CV
-                              matchRun.results.reduce((map, result) => {
-                                if (!map.has(result.cvId)) {
-                                  map.set(result.cvId, []);
-                                }
-                                map.get(result.cvId)?.push(result);
-                                return map;
-                              }, new Map<string, MatchResult[]>())
-                            ).map(([cvId, results]) => (
-                              <React.Fragment key={cvId}>
-                                {/* Header row for the CV */}
-                                <TableRow className="bg-muted/5 h-8">
-                                  <TableCell className="font-bold py-1">{results[0].cvName}</TableCell>
-                                  <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
-                                    {results.length} matching RFPs
-                                  </TableCell>
-                                </TableRow>
-                                {/* Individual result rows */}
-                                {results
-                                  .sort((a, b) => b.score - a.score)
-                                  .map((result, idx) => (
-                                    <TableRow key={`${cvId}-${result.rfpId}`} className="border-0">
-                                      <TableCell className="pl-6 py-2"></TableCell>
-                                      <TableCell className="py-2">{result.rfpTitle}</TableCell>
-                                      <TableCell className="py-2">
-                                        <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
-                                          {result.score}%
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="py-2">
-                                        <div className="flex flex-wrap gap-1">
-                                          {result.matchedKeywords.map((keyword, i) => (
-                                            <Badge key={i} variant="outline">
-                                              {keyword}
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="py-2">
-                                        {/* Pitch Generation Button */}
-                                        {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
-                                          <Button variant="outline" size="sm" disabled>
-                                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                            Generating...
-                                          </Button>
-                                        ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
-                                          <Sheet>
-                                            <SheetTrigger asChild>
-                                              <Button variant="outline" size="sm">
-                                                <Sparkles className="h-3 w-3 mr-1" />
-                                                View Pitch
-                                              </Button>
-                                            </SheetTrigger>
-                                            <SheetContent className="sm:max-w-md">
-                                              <SheetHeader>
-                                                <SheetTitle>Generated Pitch</SheetTitle>
-                                                <SheetDescription>
-                                                  For {result.cvName} matching {result.rfpTitle}
-                                                </SheetDescription>
-                                              </SheetHeader>
-                                              <div className="mt-4 relative">
-                                                <div className="prose prose-sm max-h-[60vh] overflow-y-auto p-4 border rounded-md bg-muted/20 whitespace-pre-line">
-                                                  {pitches[`${result.cvId}-${result.rfpId}`]}
-                                                </div>
-                                                <Button 
-                                                  size="sm" 
-                                                  variant="secondary" 
-                                                  className="absolute top-2 right-2"
-                                                  onClick={() => copyPitch(`${result.cvId}-${result.rfpId}`)}
-                                                >
-                                                  <Copy className="h-3 w-3 mr-1" />
-                                                  Copy
-                                                </Button>
-                                              </div>
-                                              <SheetFooter className="mt-4">
-                                                <SheetClose asChild>
-                                                  <Button type="button" variant="outline">
-                                                    Close
-                                                  </Button>
-                                                </SheetClose>
-                                                <Button 
-                                                  type="button" 
-                                                  onClick={() => generatePitch(result.cvId, result.rfpId, result)}
-                                                >
-                                                  <Sparkles className="h-3 w-3 mr-1" />
-                                                  Regenerate
-                                                </Button>
-                                              </SheetFooter>
-                                            </SheetContent>
-                                          </Sheet>
-                                        ) : (
-                                          <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => generatePitch(result.cvId, result.rfpId, result)}
-                                          >
-                                            <Sparkles className="h-3 w-3 mr-1" />
-                                            Generate Pitch
-                                          </Button>
-                                        )}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                              </React.Fragment>
-                            ))
-                          ) : (
-                            // Group by RFP
-                            Array.from(
-                              // Create a Map of RFP ID to results for that RFP
-                              matchRun.results.reduce((map, result) => {
-                                if (!map.has(result.rfpId)) {
-                                  map.set(result.rfpId, []);
-                                }
-                                map.get(result.rfpId)?.push(result);
-                                return map;
-                              }, new Map<string, MatchResult[]>())
-                            ).map(([rfpId, results]) => (
-                              <React.Fragment key={rfpId}>
-                                {/* Header row for the RFP */}
-                                <TableRow className="bg-muted/5 h-8">
-                                  <TableCell className="font-bold py-1">{results[0].rfpTitle}</TableCell>
-                                  <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
-                                    {results.length} matching CVs
-                                  </TableCell>
-                                </TableRow>
-                                {/* Individual result rows */}
-                                {results
-                                  .sort((a, b) => b.score - a.score)
-                                  .map((result, idx) => (
-                                    <TableRow key={`${rfpId}-${result.cvId}`} className="border-0">
-                                      <TableCell className="pl-6 py-2"></TableCell>
-                                      <TableCell className="py-2">{result.cvName}</TableCell>
-                                      <TableCell className="py-2">
-                                        <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
-                                          {result.score}%
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="py-2">
-                                        <div className="flex flex-wrap gap-1">
-                                          {result.matchedKeywords.map((keyword, i) => (
-                                            <Badge key={i} variant="outline">
-                                              {keyword}
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="py-2">
-                                        {/* Pitch Generation Button */}
-                                        {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
-                                          <Button variant="outline" size="sm" disabled>
-                                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                            Generating...
-                                          </Button>
-                                        ) : pitches[`${result.cvId}-${result.rfpId}`] ? (
-                                          <Sheet>
-                                            <SheetTrigger asChild>
-                                              <Button variant="outline" size="sm">
-                                                <Sparkles className="h-3 w-3 mr-1" />
-                                                View Pitch
-                                              </Button>
-                                            </SheetTrigger>
-                                            <SheetContent className="sm:max-w-md">
-                                              <SheetHeader>
-                                                <SheetTitle>Generated Pitch</SheetTitle>
-                                                <SheetDescription>
-                                                  For {result.cvName} matching {result.rfpTitle}
-                                                </SheetDescription>
-                                              </SheetHeader>
-                                              <div className="mt-4 relative">
-                                                <div className="prose prose-sm max-h-[60vh] overflow-y-auto p-4 border rounded-md bg-muted/20 whitespace-pre-line">
-                                                  {pitches[`${result.cvId}-${result.rfpId}`]}
-                                                </div>
-                                                <Button 
-                                                  size="sm" 
-                                                  variant="secondary" 
-                                                  className="absolute top-2 right-2"
-                                                  onClick={() => copyPitch(`${result.cvId}-${result.rfpId}`)}
-                                                >
-                                                  <Copy className="h-3 w-3 mr-1" />
-                                                  Copy
-                                                </Button>
-                                              </div>
-                                              <SheetFooter className="mt-4">
-                                                <SheetClose asChild>
-                                                  <Button type="button" variant="outline">
-                                                    Close
-                                                  </Button>
-                                                </SheetClose>
-                                                <Button 
-                                                  type="button" 
-                                                  onClick={() => generatePitch(result.cvId, result.rfpId, result)}
-                                                >
-                                                  <Sparkles className="h-3 w-3 mr-1" />
-                                                  Regenerate
-                                                </Button>
-                                              </SheetFooter>
-                                            </SheetContent>
-                                          </Sheet>
-                                        ) : (
-                                          <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => generatePitch(result.cvId, result.rfpId, result)}
-                                          >
-                                            <Sparkles className="h-3 w-3 mr-1" />
-                                            Generate Pitch
-                                          </Button>
-                                        )}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                              </React.Fragment>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                <CollapsibleMatchRun
+                  key={matchRun.id}
+                  matchRun={matchRun}
+                  groupByFilter={groupByFilter}
+                  onDelete={handleDeleteMatch}
+                  generatePitch={generatePitch}
+                  generatingPitch={generatingPitch}
+                  pitches={pitches}
+                  copyPitch={copyPitch}
+                />
               ))}
             </div>
           ) : (
