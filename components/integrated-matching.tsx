@@ -168,18 +168,18 @@ function CollapsibleMatchRun({
                 {groupByFilter === "cv" ? (
                   <>
                     <TableHead className="py-1">CV</TableHead>
-                    <TableHead className="py-1">RFP</TableHead>
+                    <TableHead className="py-1 w-[180px]">RFP</TableHead>
                     <TableHead className="py-1 w-[100px]">Match Score</TableHead>
                     <TableHead className="py-1">Matched Keywords</TableHead>
-                    <TableHead className="py-1 w-[160px] text-center">Actions</TableHead>
+                    <TableHead className="py-1 w-[180px] text-center">Actions</TableHead>
                   </>
                 ) : (
                   <>
-                    <TableHead className="py-1">RFP</TableHead>
+                    <TableHead className="py-1 w-[180px]">RFP</TableHead>
                     <TableHead className="py-1">CV</TableHead>
                     <TableHead className="py-1 w-[100px]">Match Score</TableHead>
                     <TableHead className="py-1">Matched Keywords</TableHead>
-                    <TableHead className="py-1 w-[160px] text-center">Actions</TableHead>
+                    <TableHead className="py-1 w-[180px] text-center">Actions</TableHead>
                   </>
                 )}
               </TableRow>
@@ -204,6 +204,7 @@ function CollapsibleMatchRun({
                       <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
                         {results.length} matching RFPs
                       </TableCell>
+                      <TableCell className="w-[180px]"></TableCell>
                     </TableRow>
                     {/* Individual result rows */}
                     {results
@@ -211,7 +212,7 @@ function CollapsibleMatchRun({
                       .map((result, idx) => (
                         <TableRow key={`${cvId}-${result.rfpId}`}>
                           <TableCell className="pl-6 py-2"></TableCell>
-                          <TableCell className="py-2">{result.rfpTitle}</TableCell>
+                          <TableCell className="py-2 w-[180px] truncate">{result.rfpTitle}</TableCell>
                           <TableCell className="py-2 w-[100px]">
                             <Badge variant={result.score > 70 ? "success" : result.score > 40 ? "warning" : "destructive"}>
                               {result.score}%
@@ -226,7 +227,7 @@ function CollapsibleMatchRun({
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell className="py-2 w-[160px] text-center">
+                          <TableCell className="py-2 w-[180px] text-center pr-6">
                             {/* Pitch Generation Button */}
                             {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
                               <Button variant="outline" size="sm" disabled className="px-2.5 h-8 whitespace-nowrap">
@@ -309,10 +310,11 @@ function CollapsibleMatchRun({
                   <React.Fragment key={rfpId}>
                     {/* Header row for the RFP */}
                     <TableRow className="bg-muted/5 h-8">
-                      <TableCell className="font-bold py-1">{results[0].rfpTitle}</TableCell>
+                      <TableCell className="font-bold py-1 w-[180px]">{results[0].rfpTitle}</TableCell>
                       <TableCell colSpan={3} className="text-sm text-muted-foreground py-1">
                         {results.length} matching CVs
                       </TableCell>
+                      <TableCell className="w-[180px]"></TableCell>
                     </TableRow>
                     {/* Individual result rows */}
                     {results
@@ -335,7 +337,7 @@ function CollapsibleMatchRun({
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell className="py-2 w-[160px] text-center">
+                          <TableCell className="py-2 w-[180px] text-center pr-6">
                             {/* Pitch Generation Button */}
                             {generatingPitch[`${result.cvId}-${result.rfpId}`] ? (
                               <Button variant="outline" size="sm" disabled className="px-2.5 h-8 whitespace-nowrap">
